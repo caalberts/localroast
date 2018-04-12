@@ -8,7 +8,7 @@ import (
 )
 
 func FromString(definition string) (localghost.Schema, error) {
-	regex := "^(GET) (/) (\\d{3})$"
+	regex := "^(GET|POST) (/) (\\d{3})$"
 	matches := regexp.MustCompile(regex).FindStringSubmatch(definition)
 
 	method := matches[1]
