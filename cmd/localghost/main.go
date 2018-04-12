@@ -14,7 +14,9 @@ func main() {
 	flag.Parse()
 	args := flag.Args()
 	definition := parseInput(args)
-	schema, _ := schema.FromString(definition)
+	schema, err := schema.FromString(definition)
+	handle(err)
+
 	server := http.NewServer(*port, schema)
 	log.Fatal(server.ListenAndServe())
 }
@@ -25,4 +27,10 @@ func parseInput(args []string) string {
 	}
 
 	return args[0]
+}
+
+func handle(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
 }
