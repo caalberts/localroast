@@ -6,4 +6,5 @@ jobs:
     working_directory: /go/src/github.com/caalberts/localghost
     steps:
       - checkout
+      - run: make setup
       - run: make all
