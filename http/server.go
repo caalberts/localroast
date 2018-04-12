@@ -8,7 +8,7 @@ import (
 )
 
 func NewServer(port string, schema localghost.Schema) *http.Server {
-	mux := NewMux(schema)
+	mux := NewMux([]localghost.Schema{schema})
 
 	log.Println("localghost:" + port)
 	return &http.Server{
@@ -17,8 +17,10 @@ func NewServer(port string, schema localghost.Schema) *http.Server {
 	}
 }
 
-func NewMux(schema localghost.Schema) *http.ServeMux {
+func NewMux(schemas []localghost.Schema) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc(schema.Path, FromSchema(schema))
+	for _, schema := range schemas {
+		mux.HandleFunc(schema.Path, FromSchema(schema))
+	}
 	return mux
 }
