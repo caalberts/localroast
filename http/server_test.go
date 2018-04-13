@@ -5,25 +5,25 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/caalberts/localghost"
+	"github.com/caalberts/localroast"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewServer(t *testing.T) {
 	port := "8888"
-	server := NewServer(port, localghost.Schema{Path: "/"})
+	server := NewServer(port, localroast.Schema{Path: "/"})
 	assert.Equal(t, ":8888", server.Addr)
 }
 
 func TestNewMux(t *testing.T) {
-	schemas := []localghost.Schema{
-		localghost.Schema{
+	schemas := []localroast.Schema{
+		localroast.Schema{
 			Method:     "GET",
 			Path:       "/",
 			StatusCode: 200,
 		},
-		localghost.Schema{
+		localroast.Schema{
 			Method:     "POST",
 			Path:       "/user",
 			StatusCode: 201,

@@ -3,8 +3,8 @@ all: build-deps build fmt vet lint test
 
 ALL_PACKAGES=$(shell go list ./... | grep -v "vendor")
 
-APP_MAIN="./cmd/localghost"
-APP_EXECUTABLE="localghost"
+APP_MAIN="./cmd/localroast"
+APP_EXECUTABLE="localroast"
 
 setup:
 	go get -u github.com/golang/dep/cmd/dep

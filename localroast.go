@@ -1,4 +1,4 @@
-package localghost
+package localroast
 
 type Schema struct {
 	Method     string

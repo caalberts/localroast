@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/caalberts/localghost"
+	"github.com/caalberts/localroast"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFromString(t *testing.T) {
 	var definition string
-	var schema localghost.Schema
+	var schema localroast.Schema
 	var err error
 
 	definition = "GET / 200"

@@ -5,12 +5,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/caalberts/localghost"
+	"github.com/caalberts/localroast"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFromSchema(t *testing.T) {
-	schema := localghost.Schema{
+	schema := localroast.Schema{
 		Method:     "GET",
 		Path:       "/",
 		StatusCode: http.StatusNotFound,

@@ -5,8 +5,8 @@ import (
 	"flag"
 	"log"
 
-	"github.com/caalberts/localghost/http"
-	"github.com/caalberts/localghost/schema"
+	"github.com/caalberts/localroast/http"
+	"github.com/caalberts/localroast/schema"
 )
 
 func main() {
