@@ -10,7 +10,7 @@ import (
 func NewServer(port string, schemas []localroast.Schema) *http.Server {
 	mux := NewMux(schemas)
 
-	log.Println("localroast:" + port)
+	log.Println("Localroast brewing on port " + port)
 	return &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
