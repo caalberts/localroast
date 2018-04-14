@@ -13,20 +13,19 @@ func main() {
 	port := flag.String("p", "8080", "port number")
 	flag.Parse()
 	args := flag.Args()
-	definition := parseInput(args)
-	schema, err := schema.FromString(definition)
+	definitions := parseInput(args)
+	schemas, err := schema.FromStrings(definitions)
 	handle(err)
 
-	server := http.NewServer(*port, schema)
+	server := http.NewServer(*port, schemas)
 	log.Fatal(server.ListenAndServe())
 }
 
-func parseInput(args []string) string {
+func parseInput(args []string) []string {
 	if len(args) < 1 {
 		log.Fatal(errors.New("Please define an endpoint in the format '<METHOD> <PATH> <STATUS_CODE>'. e.g 'GET / 200'"))
 	}
-
-	return args[0]
+	return args
 }
 
 func handle(err error) {

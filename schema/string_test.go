@@ -8,6 +8,35 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestFromStrings(t *testing.T) {
+	var schemas []localroast.Schema
+	var err error
+
+	definitions := []string{
+		"GET / 200",
+		"POST /user 201",
+	}
+	schemas, err = FromStrings(definitions)
+	assert.Nil(t, err)
+	assert.Equal(t, len(definitions), len(schemas))
+
+	assert.Equal(t, "GET", schemas[0].Method)
+	assert.Equal(t, "POST", schemas[1].Method)
+
+	assert.Equal(t, "/", schemas[0].Path)
+	assert.Equal(t, "/user", schemas[1].Path)
+
+	assert.Equal(t, http.StatusOK, schemas[0].StatusCode)
+	assert.Equal(t, http.StatusCreated, schemas[1].StatusCode)
+
+	definitions = []string{
+		"GET / 200",
+		"POST 201",
+	}
+	_, err = FromStrings(definitions)
+	assert.NotNil(t, err)
+}
+
 func TestFromString(t *testing.T) {
 	var definition string
 	var schema localroast.Schema

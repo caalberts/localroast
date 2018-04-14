@@ -11,8 +11,9 @@ import (
 )
 
 func TestNewServer(t *testing.T) {
+	schema := localroast.Schema{Path: "/"}
 	port := "8888"
-	server := NewServer(port, localroast.Schema{Path: "/"})
+	server := NewServer(port, []localroast.Schema{schema})
 	assert.Equal(t, ":8888", server.Addr)
 }
 

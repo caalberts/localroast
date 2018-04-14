@@ -12,6 +12,18 @@ const regex = "^(GET|POST) (/?[\\w/]+) (\\d{3})$"
 
 var matcher = regexp.MustCompile(regex)
 
+func FromStrings(definitions []string) ([]localroast.Schema, error) {
+	schemas := make([]localroast.Schema, len(definitions))
+	for i, definition := range definitions {
+		schema, err := FromString(definition)
+		if err != nil {
+			return schemas, err
+		}
+		schemas[i] = schema
+	}
+	return schemas, nil
+}
+
 func FromString(definition string) (localroast.Schema, error) {
 	matches, err := ValidMatch(definition)
 	if err != nil {

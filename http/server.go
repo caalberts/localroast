@@ -7,8 +7,8 @@ import (
 	"github.com/caalberts/localroast"
 )
 
-func NewServer(port string, schema localroast.Schema) *http.Server {
-	mux := NewMux([]localroast.Schema{schema})
+func NewServer(port string, schemas []localroast.Schema) *http.Server {
+	mux := NewMux(schemas)
 
 	log.Println("localroast:" + port)
 	return &http.Server{
