@@ -7,6 +7,13 @@ import (
 	"github.com/caalberts/localroast"
 )
 
+type route struct {
+	method   string
+	response int
+}
+
+var registry = make(map[string][]route)
+
 func NewServer(port string, schemas []localroast.Schema) *http.Server {
 	mux := NewMux(schemas)
 
@@ -18,9 +25,29 @@ func NewServer(port string, schemas []localroast.Schema) *http.Server {
 }
 
 func NewMux(schemas []localroast.Schema) *http.ServeMux {
-	mux := http.NewServeMux()
+	register(schemas)
+	return initMux()
+}
+
+func register(schemas []localroast.Schema) {
 	for _, schema := range schemas {
-		mux.HandleFunc(schema.Path, FromSchema(schema))
+		r := route{method: schema.Method, response: schema.StatusCode}
+		registry[schema.Path] = append(registry[schema.Path], r)
 	}
+}
+
+func initMux() *http.ServeMux {
+	mux := http.NewServeMux()
+
+	for path, routes := range registry {
+		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+			for _, route := range routes {
+				if r.Method == route.method {
+					w.WriteHeader(route.response)
+				}
+			}
+		})
+	}
+
 	return mux
 }

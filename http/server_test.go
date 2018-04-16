@@ -25,8 +25,13 @@ func TestNewMux(t *testing.T) {
 			StatusCode: 200,
 		},
 		localroast.Schema{
+			Method:     "GET",
+			Path:       "/users",
+			StatusCode: 200,
+		},
+		localroast.Schema{
 			Method:     "POST",
-			Path:       "/user",
+			Path:       "/users",
 			StatusCode: 201,
 		},
 	}
