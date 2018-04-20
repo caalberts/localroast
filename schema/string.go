@@ -8,7 +8,7 @@ import (
 	"github.com/caalberts/localroast"
 )
 
-const regex = "^(GET|POST) (/?[\\w/]+) (\\d{3})$"
+const regex = "^(GET|POST) ([\\w\\d/]+) (\\d{3})$"
 
 var matcher = regexp.MustCompile(regex)
 

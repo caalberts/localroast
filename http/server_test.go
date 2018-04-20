@@ -40,11 +40,10 @@ func TestNewMux(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
+	var resp *http.Response
+	var err error
+
 	for _, schema := range schemas {
-
-		var resp *http.Response
-		var err error
-
 		switch schema.Method {
 		case http.MethodGet:
 			resp, err = http.Get(server.URL + schema.Path)
@@ -55,4 +54,9 @@ func TestNewMux(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, schema.StatusCode, resp.StatusCode)
 	}
+
+	resp, err = http.Get(server.URL + "/unknown")
+
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }

@@ -7,13 +7,6 @@ import (
 	"github.com/caalberts/localroast"
 )
 
-type route struct {
-	method   string
-	response int
-}
-
-var registry = make(map[string][]route)
-
 func NewServer(port string, schemas []localroast.Schema) *http.Server {
 	mux := NewMux(schemas)
 
@@ -24,30 +17,30 @@ func NewServer(port string, schemas []localroast.Schema) *http.Server {
 	}
 }
 
-func NewMux(schemas []localroast.Schema) *http.ServeMux {
-	register(schemas)
-	return initMux()
-}
+type Mux map[string]responses
+type responses map[string]int
 
-func register(schemas []localroast.Schema) {
+func NewMux(schemas []localroast.Schema) Mux {
+	mux := make(Mux)
 	for _, schema := range schemas {
-		r := route{method: schema.Method, response: schema.StatusCode}
-		registry[schema.Path] = append(registry[schema.Path], r)
+		if _, exists := mux[schema.Path]; !exists {
+			mux[schema.Path] = make(responses)
+		}
+		mux[schema.Path][schema.Method] = schema.StatusCode
 	}
+	return mux
 }
 
-func initMux() *http.ServeMux {
-	mux := http.NewServeMux()
-
-	for path, routes := range registry {
-		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-			for _, route := range routes {
-				if r.Method == route.method {
-					w.WriteHeader(route.response)
-				}
-			}
-		})
+func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	handler, ok := m[r.URL.Path]
+	if !ok {
+		http.NotFound(w, r)
 	}
 
-	return mux
+	response, ok := handler[r.Method]
+	if !ok {
+		http.NotFound(w, r)
+	}
+
+	w.WriteHeader(response)
 }
