@@ -15,7 +15,7 @@ go get -u github.com/caalberts/localroast
 
 ## Usage
 
-Routes are defined in the format `'<METHOD> <PATH> <STATUS_CODE>'`, for example `'GET / 200'`. Multiple route definitions are created using successive string arguments. Only `GET` and `POST` are currently supported.
+Routes are defined in the format `'<METHOD> <PATH> <STATUS_CODE>'`, for example `'GET / 200'`. Multiple route definitions are created using successive string arguments.
 
 To start Localroast:
 ```sh
