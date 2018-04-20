@@ -17,30 +17,36 @@ func NewServer(port string, schemas []localroast.Schema) *http.Server {
 	}
 }
 
-type Mux map[string]responses
-type responses map[string]int
+type route struct {
+	method string
+	path   string
+}
+type Mux map[route]int
 
 func NewMux(schemas []localroast.Schema) Mux {
 	mux := make(Mux)
 	for _, schema := range schemas {
-		if _, exists := mux[schema.Path]; !exists {
-			mux[schema.Path] = make(responses)
+		route := route{
+			method: schema.Method,
+			path:   schema.Path,
 		}
-		mux[schema.Path][schema.Method] = schema.StatusCode
+		mux[route] = schema.StatusCode
 	}
 	return mux
 }
 
 func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	handler, ok := m[r.URL.Path]
-	if !ok {
+	route := route{
+		method: r.Method,
+		path:   r.URL.Path,
+	}
+	responseCode, found := m[route]
+	if !found {
+		log.Printf("%v: Not Found\n", route)
 		http.NotFound(w, r)
+		return
 	}
 
-	response, ok := handler[r.Method]
-	if !ok {
-		http.NotFound(w, r)
-	}
-
-	w.WriteHeader(response)
+	log.Printf("%v: %d\n", route, responseCode)
+	w.WriteHeader(responseCode)
 }
