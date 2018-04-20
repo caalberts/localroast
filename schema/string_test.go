@@ -14,20 +14,24 @@ func TestFromStrings(t *testing.T) {
 
 	definitions := []string{
 		"GET / 200",
-		"POST /user 201",
+		"POST /users 201",
+		"PUT /user/1 403",
 	}
 	schemas, err = FromStrings(definitions)
 	assert.Nil(t, err)
 	assert.Equal(t, len(definitions), len(schemas))
 
-	assert.Equal(t, "GET", schemas[0].Method)
-	assert.Equal(t, "POST", schemas[1].Method)
+	assert.Equal(t, http.MethodGet, schemas[0].Method)
+	assert.Equal(t, http.MethodPost, schemas[1].Method)
+	assert.Equal(t, http.MethodPut, schemas[2].Method)
 
 	assert.Equal(t, "/", schemas[0].Path)
-	assert.Equal(t, "/user", schemas[1].Path)
+	assert.Equal(t, "/users", schemas[1].Path)
+	assert.Equal(t, "/user/1", schemas[2].Path)
 
 	assert.Equal(t, http.StatusOK, schemas[0].StatusCode)
 	assert.Equal(t, http.StatusCreated, schemas[1].StatusCode)
+	assert.Equal(t, http.StatusForbidden, schemas[2].StatusCode)
 
 	definitions = []string{
 		"GET / 200",
@@ -37,55 +41,69 @@ func TestFromStrings(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+var schemaTests = []struct {
+	in       string
+	expected localroast.Schema
+}{
+	{
+		"GET / 200",
+		localroast.Schema{
+			Method:     http.MethodGet,
+			Path:       "/",
+			StatusCode: http.StatusOK,
+		},
+	},
+	{
+		"POST / 201",
+		localroast.Schema{
+			Method:     http.MethodPost,
+			Path:       "/",
+			StatusCode: http.StatusCreated,
+		},
+	},
+	{
+		"PUT /user/1 403",
+		localroast.Schema{
+			Method:     http.MethodPut,
+			Path:       "/user/1",
+			StatusCode: http.StatusForbidden,
+		},
+	},
+}
+
 func TestFromString(t *testing.T) {
-	var definition string
-	var schema localroast.Schema
-	var err error
+	for _, test := range schemaTests {
+		schema, err := FromString(test.in)
+		assert.Nil(t, err)
+		assert.Equal(t, test.expected.Method, schema.Method)
+		assert.Equal(t, test.expected.Path, schema.Path)
+		assert.Equal(t, test.expected.StatusCode, schema.StatusCode)
+	}
+}
 
-	definition = "GET / 200"
-	schema, err = FromString(definition)
-	assert.Nil(t, err)
-	assert.Equal(t, "GET", schema.Method)
-	assert.Equal(t, "/", schema.Path)
-	assert.Equal(t, http.StatusOK, schema.StatusCode)
-
-	definition = "POST / 201"
-	schema, err = FromString(definition)
-	assert.Nil(t, err)
-	assert.Equal(t, "POST", schema.Method)
-	assert.Equal(t, "/", schema.Path)
-	assert.Equal(t, http.StatusCreated, schema.StatusCode)
+var validMatchTests = []struct {
+	in    string
+	valid bool
+}{
+	{"GET / 200", true},
+	{"POST / 201", true},
+	{"PUT /user/1 400", true},
+	{"PATCH /user/2 403", true},
+	{"DELETE /account/3 405", true},
+	{"GET /index 200", true},
+	{"GET /", false},
+	{"GET / abc", false},
+	{"GET abc", false},
+	{"SEND / 200", false},
 }
 
 func TestValidMatch(t *testing.T) {
-	var source string
-	var err error
-
-	source = "GET / 200"
-	_, err = ValidMatch(source)
-	assert.Nil(t, err)
-
-	source = "POST / 201"
-	_, err = ValidMatch(source)
-	assert.Nil(t, err)
-
-	source = "GET /index 200"
-	_, err = ValidMatch(source)
-	assert.Nil(t, err)
-
-	source = "GET /"
-	_, err = ValidMatch(source)
-	assert.NotNil(t, err)
-
-	source = "GET / abc"
-	_, err = ValidMatch(source)
-	assert.NotNil(t, err)
-
-	source = "GET abc"
-	_, err = ValidMatch(source)
-	assert.NotNil(t, err)
-
-	source = "SEND / 200"
-	_, err = ValidMatch(source)
-	assert.NotNil(t, err)
+	for _, test := range validMatchTests {
+		_, err := ValidMatch(test.in)
+		if test.valid {
+			assert.Nil(t, err)
+		} else {
+			assert.NotNil(t, err)
+		}
+	}
 }
