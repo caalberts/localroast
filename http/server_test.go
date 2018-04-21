@@ -20,19 +20,19 @@ func TestNewServer(t *testing.T) {
 func TestNewMux(t *testing.T) {
 	schemas := []localroast.Schema{
 		localroast.Schema{
-			Method:     "GET",
-			Path:       "/",
-			StatusCode: 200,
+			Method: "GET",
+			Path:   "/",
+			Status: 200,
 		},
 		localroast.Schema{
-			Method:     "GET",
-			Path:       "/users",
-			StatusCode: 200,
+			Method: "GET",
+			Path:   "/users",
+			Status: 200,
 		},
 		localroast.Schema{
-			Method:     "POST",
-			Path:       "/users",
-			StatusCode: 201,
+			Method: "POST",
+			Path:   "/users",
+			Status: 201,
 		},
 	}
 
@@ -52,7 +52,7 @@ func TestNewMux(t *testing.T) {
 		}
 
 		assert.Nil(t, err)
-		assert.Equal(t, schema.StatusCode, resp.StatusCode)
+		assert.Equal(t, schema.Status, resp.StatusCode)
 	}
 
 	resp, err = http.Get(server.URL + "/unknown")

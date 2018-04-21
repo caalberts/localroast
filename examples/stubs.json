@@ -1,0 +1,37 @@
+[
+    {
+        "method": "GET",
+        "path": "/",
+        "status": 200,
+        "response": {
+            "success": true
+        }
+    },
+    {
+        "method": "GET",
+        "path": "/users",
+        "status": 200,
+        "response": {
+            "success": true,
+            "ids": [1, 2, 3]
+        }
+    },
+    {
+        "method": "POST",
+        "path": "/users",
+        "status": 201,
+        "response": {
+            "success": true,
+            "id": 4
+        }
+    },
+    {
+        "method": "GET",
+        "path": "/admin",
+        "status": 401,
+        "response": {
+            "success": false,
+            "message": "unauthorized"
+        }
+    }
+]

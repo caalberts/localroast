@@ -30,7 +30,7 @@ func NewMux(schemas []localroast.Schema) Mux {
 			method: schema.Method,
 			path:   schema.Path,
 		}
-		mux[route] = schema.StatusCode
+		mux[route] = schema.Status
 	}
 	return mux
 }

@@ -32,11 +32,11 @@ func FromString(definition string) (localroast.Schema, error) {
 
 	method := matches[1]
 	path := matches[2]
-	code, _ := strconv.Atoi(matches[3])
+	status, _ := strconv.Atoi(matches[3])
 	schema := localroast.Schema{
-		Method:     method,
-		Path:       path,
-		StatusCode: code,
+		Method: method,
+		Path:   path,
+		Status: status,
 	}
 	return schema, nil
 }

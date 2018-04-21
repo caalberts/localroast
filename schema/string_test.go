@@ -29,9 +29,9 @@ func TestFromStrings(t *testing.T) {
 	assert.Equal(t, "/users", schemas[1].Path)
 	assert.Equal(t, "/user/1", schemas[2].Path)
 
-	assert.Equal(t, http.StatusOK, schemas[0].StatusCode)
-	assert.Equal(t, http.StatusCreated, schemas[1].StatusCode)
-	assert.Equal(t, http.StatusForbidden, schemas[2].StatusCode)
+	assert.Equal(t, http.StatusOK, schemas[0].Status)
+	assert.Equal(t, http.StatusCreated, schemas[1].Status)
+	assert.Equal(t, http.StatusForbidden, schemas[2].Status)
 
 	definitions = []string{
 		"GET / 200",
@@ -48,25 +48,25 @@ var schemaTests = []struct {
 	{
 		"GET / 200",
 		localroast.Schema{
-			Method:     http.MethodGet,
-			Path:       "/",
-			StatusCode: http.StatusOK,
+			Method: http.MethodGet,
+			Path:   "/",
+			Status: http.StatusOK,
 		},
 	},
 	{
 		"POST / 201",
 		localroast.Schema{
-			Method:     http.MethodPost,
-			Path:       "/",
-			StatusCode: http.StatusCreated,
+			Method: http.MethodPost,
+			Path:   "/",
+			Status: http.StatusCreated,
 		},
 	},
 	{
 		"PUT /user/1 403",
 		localroast.Schema{
-			Method:     http.MethodPut,
-			Path:       "/user/1",
-			StatusCode: http.StatusForbidden,
+			Method: http.MethodPut,
+			Path:   "/user/1",
+			Status: http.StatusForbidden,
 		},
 	},
 }
@@ -77,7 +77,7 @@ func TestFromString(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, test.expected.Method, schema.Method)
 		assert.Equal(t, test.expected.Path, schema.Path)
-		assert.Equal(t, test.expected.StatusCode, schema.StatusCode)
+		assert.Equal(t, test.expected.Status, schema.Status)
 	}
 }
 
