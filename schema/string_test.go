@@ -8,18 +8,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFromStrings(t *testing.T) {
+func TestStringCreateSchema(t *testing.T) {
 	var schemas []localroast.Schema
 	var err error
 
-	definitions := []string{
-		"GET / 200",
-		"POST /users 201",
-		"PUT /user/1 403",
+	str := &String{
+		Strings: []string{
+			"GET / 200",
+			"POST /users 201",
+			"PUT /user/1 403",
+		},
 	}
-	schemas, err = FromStrings(definitions)
+	schemas, err = str.CreateSchema()
 	assert.Nil(t, err)
-	assert.Equal(t, len(definitions), len(schemas))
+	assert.Equal(t, len(str.Strings), len(schemas))
 
 	assert.Equal(t, http.MethodGet, schemas[0].Method)
 	assert.Equal(t, http.MethodPost, schemas[1].Method)
@@ -33,11 +35,13 @@ func TestFromStrings(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, schemas[1].Status)
 	assert.Equal(t, http.StatusForbidden, schemas[2].Status)
 
-	definitions = []string{
-		"GET / 200",
-		"POST 201",
+	str = &String{
+		Strings: []string{
+			"GET / 200",
+			"POST 201",
+		},
 	}
-	_, err = FromStrings(definitions)
+	_, err = str.CreateSchema()
 	assert.NotNil(t, err)
 }
 
@@ -71,9 +75,9 @@ var schemaTests = []struct {
 	},
 }
 
-func TestFromString(t *testing.T) {
+func TestStringToSchema(t *testing.T) {
 	for _, test := range schemaTests {
-		schema, err := FromString(test.in)
+		schema, err := toSchema(test.in)
 		assert.Nil(t, err)
 		assert.Equal(t, test.expected.Method, schema.Method)
 		assert.Equal(t, test.expected.Path, schema.Path)
@@ -99,7 +103,7 @@ var validMatchTests = []struct {
 
 func TestValidMatch(t *testing.T) {
 	for _, test := range validMatchTests {
-		_, err := ValidMatch(test.in)
+		_, err := validMatch(test.in)
 		if test.valid {
 			assert.Nil(t, err)
 		} else {

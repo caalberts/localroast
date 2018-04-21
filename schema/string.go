@@ -8,14 +8,14 @@ import (
 	"github.com/caalberts/localroast"
 )
 
-const regex = "^(GET|POST|PUT|PATCH|DELETE) ([\\w\\d/]+) (\\d{3})$"
+type String struct {
+	Strings []string
+}
 
-var matcher = regexp.MustCompile(regex)
-
-func FromStrings(definitions []string) ([]localroast.Schema, error) {
-	schemas := make([]localroast.Schema, len(definitions))
-	for i, definition := range definitions {
-		schema, err := FromString(definition)
+func (s *String) CreateSchema() ([]localroast.Schema, error) {
+	schemas := make([]localroast.Schema, len(s.Strings))
+	for i, str := range s.Strings {
+		schema, err := toSchema(str)
 		if err != nil {
 			return schemas, err
 		}
@@ -24,8 +24,8 @@ func FromStrings(definitions []string) ([]localroast.Schema, error) {
 	return schemas, nil
 }
 
-func FromString(definition string) (localroast.Schema, error) {
-	matches, err := ValidMatch(definition)
+func toSchema(definition string) (localroast.Schema, error) {
+	matches, err := validMatch(definition)
 	if err != nil {
 		return localroast.Schema{}, err
 	}
@@ -41,7 +41,11 @@ func FromString(definition string) (localroast.Schema, error) {
 	return schema, nil
 }
 
-func ValidMatch(input string) ([]string, error) {
+const regex = "^(GET|POST|PUT|PATCH|DELETE) ([\\w\\d/]+) (\\d{3})$"
+
+var matcher = regexp.MustCompile(regex)
+
+func validMatch(input string) ([]string, error) {
 	matches := matcher.FindStringSubmatch(input)
 	if len(matches) != 4 {
 		return nil, errors.New("Invalid input: " + input)

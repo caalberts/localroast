@@ -3,18 +3,13 @@ package schema
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"strings"
 
 	"github.com/caalberts/localroast"
 )
 
-func FromJSON(filepath string) ([]localroast.Schema, error) {
-	f, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		return []localroast.Schema{}, err
-	}
-	return BytesToSchema(f)
+type JSON struct {
+	Bytes []byte
 }
 
 type stub struct {
@@ -24,9 +19,9 @@ type stub struct {
 	Response json.RawMessage `json:"response"`
 }
 
-func BytesToSchema(bytes []byte) ([]localroast.Schema, error) {
+func (j *JSON) CreateSchema() ([]localroast.Schema, error) {
 	var stubs []stub
-	err := json.Unmarshal(bytes, &stubs)
+	err := json.Unmarshal(j.Bytes, &stubs)
 	if err != nil {
 		return []localroast.Schema{}, err
 	}

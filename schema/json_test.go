@@ -10,8 +10,9 @@ import (
 
 var validJSON, _ = ioutil.ReadFile("../examples/stubs.json")
 
-func TestBytesToSchema(t *testing.T) {
-	schemas, err := BytesToSchema(validJSON)
+func TestJSONCreateSchema(t *testing.T) {
+	json := &JSON{Bytes: validJSON}
+	schemas, err := json.CreateSchema()
 
 	assert.Nil(t, err)
 	assert.Equal(t, 4, len(schemas))
@@ -43,7 +44,8 @@ var missingKeys = `
 `
 
 func TestJSONWithMissingKeys(t *testing.T) {
-	_, err := BytesToSchema([]byte(missingKeys))
+	json := &JSON{Bytes: []byte(missingKeys)}
+	_, err := json.CreateSchema()
 	assert.NotNil(t, err)
 	assert.Equal(t, "Missing required fields: method, path, status", err.Error())
 }
@@ -62,7 +64,8 @@ var invalidJSON = `
 `
 
 func TestInvalidJSON(t *testing.T) {
-	_, err := BytesToSchema([]byte(invalidJSON))
+	json := &JSON{Bytes: []byte(invalidJSON)}
+	_, err := json.CreateSchema()
 	assert.NotNil(t, err)
 }
 
@@ -79,6 +82,7 @@ var jsonObject = `
 `
 
 func TestJSONObject(t *testing.T) {
-	_, err := BytesToSchema([]byte(jsonObject))
+	json := &JSON{Bytes: []byte(jsonObject)}
+	_, err := json.CreateSchema()
 	assert.NotNil(t, err)
 }
