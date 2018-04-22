@@ -36,6 +36,8 @@ func NewMux(schemas []localroast.Schema) Mux {
 }
 
 func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	route := route{
 		method: r.Method,
 		path:   r.URL.Path,

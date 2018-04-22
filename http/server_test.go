@@ -43,6 +43,7 @@ func TestNewMux(t *testing.T) {
 		resp := httptest.NewRecorder()
 		mux.ServeHTTP(resp, req)
 
+		assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
 		assert.Equal(t, schema.Status, resp.Code)
 	}
 
