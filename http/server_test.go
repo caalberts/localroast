@@ -37,26 +37,18 @@ func TestNewMux(t *testing.T) {
 	}
 
 	mux := NewMux(schemas)
-	server := httptest.NewServer(mux)
-	defer server.Close()
-
-	var resp *http.Response
-	var err error
 
 	for _, schema := range schemas {
-		switch schema.Method {
-		case http.MethodGet:
-			resp, err = http.Get(server.URL + schema.Path)
-		case http.MethodPost:
-			resp, err = http.Post(server.URL+schema.Path, "", nil)
-		}
+		req := httptest.NewRequest(schema.Method, schema.Path, nil)
+		resp := httptest.NewRecorder()
+		mux.ServeHTTP(resp, req)
 
-		assert.Nil(t, err)
-		assert.Equal(t, schema.Status, resp.StatusCode)
+		assert.Equal(t, schema.Status, resp.Code)
 	}
 
-	resp, err = http.Get(server.URL + "/unknown")
+	req := httptest.NewRequest(http.MethodGet, "/unknown", nil)
+	resp := httptest.NewRecorder()
+	mux.ServeHTTP(resp, req)
 
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	assert.Equal(t, http.StatusNotFound, resp.Code)
 }
