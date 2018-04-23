@@ -32,9 +32,10 @@ func (j *JSON) CreateSchema() ([]localroast.Schema, error) {
 			return []localroast.Schema{}, fmt.Errorf("Missing required fields: %s", strings.Join(f, ", "))
 		}
 		schemas[i] = localroast.Schema{
-			Method: *stub.Method,
-			Path:   *stub.Path,
-			Status: *stub.Status,
+			Method:   *stub.Method,
+			Path:     *stub.Path,
+			Status:   *stub.Status,
+			Response: []byte(stub.Response),
 		}
 	}
 
