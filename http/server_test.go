@@ -1,6 +1,8 @@
 package http
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,23 +22,34 @@ func TestNewServer(t *testing.T) {
 func TestNewMux(t *testing.T) {
 	schemas := []localroast.Schema{
 		localroast.Schema{
-			Method: "GET",
-			Path:   "/",
-			Status: 200,
+			Method:   "GET",
+			Path:     "/",
+			Status:   200,
+			Response: []byte(`{"success": true}`),
 		},
 		localroast.Schema{
-			Method: "GET",
-			Path:   "/users",
-			Status: 200,
+			Method:   "GET",
+			Path:     "/users",
+			Status:   200,
+			Response: []byte(`{"success": true, "ids": [1, 2]}`),
 		},
 		localroast.Schema{
-			Method: "POST",
-			Path:   "/users",
-			Status: 201,
+			Method:   "POST",
+			Path:     "/users",
+			Status:   201,
+			Response: []byte(`{"success": true, "id": 3}`),
 		},
 	}
 
+	type testData struct {
+		Success bool   `json:"success"`
+		ID      int    `json:"id"`
+		IDs     []int  `json:"ids"`
+		Message string `json:"message"`
+	}
 	mux := NewMux(schemas)
+
+	var expected, actual testData
 
 	for _, schema := range schemas {
 		req := httptest.NewRequest(schema.Method, schema.Path, nil)
@@ -45,6 +58,12 @@ func TestNewMux(t *testing.T) {
 
 		assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
 		assert.Equal(t, schema.Status, resp.Code)
+
+		body := resp.Result().Body
+		defer body.Close()
+		json.NewDecoder(body).Decode(&actual)
+		json.Unmarshal(schema.Response, &expected)
+		assert.Equal(t, expected, actual)
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/unknown", nil)
@@ -52,4 +71,8 @@ func TestNewMux(t *testing.T) {
 	mux.ServeHTTP(resp, req)
 
 	assert.Equal(t, http.StatusNotFound, resp.Code)
+	body := resp.Result().Body
+	defer body.Close()
+	bodyBytes, _ := ioutil.ReadAll(body)
+	assert.Equal(t, "404 page not found\n", string(bodyBytes))
 }

@@ -21,7 +21,11 @@ type route struct {
 	method string
 	path   string
 }
-type Mux map[route]int
+type response struct {
+	code int
+	body []byte
+}
+type Mux map[route]response
 
 func NewMux(schemas []localroast.Schema) Mux {
 	mux := make(Mux)
@@ -30,7 +34,11 @@ func NewMux(schemas []localroast.Schema) Mux {
 			method: schema.Method,
 			path:   schema.Path,
 		}
-		mux[route] = schema.Status
+		resp := response{
+			code: schema.Status,
+			body: schema.Response,
+		}
+		mux[route] = resp
 	}
 	return mux
 }
@@ -42,13 +50,14 @@ func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		method: r.Method,
 		path:   r.URL.Path,
 	}
-	responseCode, found := m[route]
+	resp, found := m[route]
 	if !found {
 		log.Printf("%v: Not Found\n", route)
 		http.NotFound(w, r)
 		return
 	}
 
-	log.Printf("%v: %d\n", route, responseCode)
-	w.WriteHeader(responseCode)
+	log.Printf("%v: %d - %v\n", route, resp.code, resp.body)
+	w.WriteHeader(resp.code)
+	w.Write(resp.body)
 }
