@@ -5,7 +5,7 @@
 
 ## Overview
 
-Localroast is a Go command line tool to run a local stub http service. Localroast takes command line string arguments to define routes and stub responses with http status codes.
+Localroast is a lightweight Go command line tool to run a local stub http service. Stub endpoints can be defined either using a JSON file input or command line arguments.
 
 ## Installation
 
@@ -15,7 +15,34 @@ go get -u github.com/caalberts/localroast
 
 ## Usage
 
-Routes are defined in the format `'<METHOD> <PATH> <STATUS_CODE>'`, for example `'GET / 200'`. Multiple route definitions are created using successive string arguments.
+### JSON file
+
+To start localroast using a JSON path, use the `-json` flag, followed by the path to the JSON file.
+
+```sh
+localroast -json examples/stubs.json
+```
+
+The JSON file must be a JSON array containing endpoint definitions. Each endpoint is represented as a JSON object with keys `method`, `path`, `status` and `response`. A valid JSON file would look like this:
+```json
+[
+  {
+    "method": "GET",
+    "path": "/",
+    "status": 200,
+    "response": {
+        "success": true
+    }
+  }
+]
+```
+
+See [examples/stubs.json](examples/stubs.json) for more.
+
+
+### Command line
+
+Endpoints are defined in the format `'<METHOD> <PATH> <STATUS_CODE>'`, for example `'GET / 200'`. Multiple endpoint definitions are created using successive string arguments.
 
 To start Localroast:
 ```sh
