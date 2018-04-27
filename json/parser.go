@@ -1,4 +1,4 @@
-package schema
+package json
 
 import (
 	"encoding/json"
@@ -8,9 +8,7 @@ import (
 	"github.com/caalberts/localroast"
 )
 
-type JSON struct {
-	Bytes []byte
-}
+type Parser struct{}
 
 type stub struct {
 	Method   *string         `json:"method"`
@@ -19,9 +17,9 @@ type stub struct {
 	Response json.RawMessage `json:"response"`
 }
 
-func (j *JSON) CreateSchema() ([]localroast.Schema, error) {
+func (p *Parser) Parse(bytes []byte) ([]localroast.Schema, error) {
 	var stubs []stub
-	err := json.Unmarshal(j.Bytes, &stubs)
+	err := json.Unmarshal(bytes, &stubs)
 	if err != nil {
 		return []localroast.Schema{}, err
 	}

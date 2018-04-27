@@ -1,4 +1,4 @@
-package schema
+package json
 
 import (
 	"encoding/json"
@@ -18,9 +18,9 @@ type testData struct {
 
 var validJSON, _ = ioutil.ReadFile("../examples/stubs.json")
 
-func TestJSONCreateSchema(t *testing.T) {
-	j := &JSON{Bytes: validJSON}
-	schemas, err := j.CreateSchema()
+func TestParseSchemaFromJSON(t *testing.T) {
+	p := &Parser{}
+	schemas, err := p.Parse(validJSON)
 
 	assert.Nil(t, err)
 	assert.Equal(t, 4, len(schemas))
@@ -77,9 +77,9 @@ var missingKeys = `
 ]
 `
 
-func TestJSONWithMissingKeys(t *testing.T) {
-	json := &JSON{Bytes: []byte(missingKeys)}
-	_, err := json.CreateSchema()
+func TestParseSchemaWithMissingKeys(t *testing.T) {
+	p := &Parser{}
+	_, err := p.Parse([]byte(missingKeys))
 	assert.NotNil(t, err)
 	assert.Equal(t, "Missing required fields: method, path, status", err.Error())
 }
@@ -97,9 +97,9 @@ var invalidJSON = `
 ]
 `
 
-func TestInvalidJSON(t *testing.T) {
-	json := &JSON{Bytes: []byte(invalidJSON)}
-	_, err := json.CreateSchema()
+func TestParseSchemaFromInvalidJSON(t *testing.T) {
+	p := &Parser{}
+	_, err := p.Parse([]byte(invalidJSON))
 	assert.NotNil(t, err)
 }
 
@@ -115,8 +115,8 @@ var jsonObject = `
 }
 `
 
-func TestJSONObject(t *testing.T) {
-	json := &JSON{Bytes: []byte(jsonObject)}
-	_, err := json.CreateSchema()
+func TestParseSchemaFromJSONObject(t *testing.T) {
+	p := &Parser{}
+	_, err := p.Parse([]byte(jsonObject))
 	assert.NotNil(t, err)
 }

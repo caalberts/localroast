@@ -1,4 +1,4 @@
-package schema
+package strings
 
 import (
 	"net/http"
@@ -8,20 +8,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStringCreateSchema(t *testing.T) {
+func TestParseSchemaFromString(t *testing.T) {
 	var schemas []localroast.Schema
 	var err error
 
-	str := &String{
-		Strings: []string{
-			"GET / 200",
-			"POST /users 201",
-			"PUT /user/1 403",
-		},
+	p := &Parser{}
+	input := []string{
+		"GET / 200",
+		"POST /users 201",
+		"PUT /user/1 403",
 	}
-	schemas, err = str.CreateSchema()
+	schemas, err = p.Parse(input)
 	assert.Nil(t, err)
-	assert.Equal(t, len(str.Strings), len(schemas))
+	assert.Equal(t, len(input), len(schemas))
 
 	assert.Equal(t, http.MethodGet, schemas[0].Method)
 	assert.Equal(t, http.MethodPost, schemas[1].Method)
@@ -35,13 +34,12 @@ func TestStringCreateSchema(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, schemas[1].Status)
 	assert.Equal(t, http.StatusForbidden, schemas[2].Status)
 
-	str = &String{
-		Strings: []string{
-			"GET / 200",
-			"POST 201",
-		},
+	p = &Parser{}
+	input = []string{
+		"GET / 200",
+		"POST 201",
 	}
-	_, err = str.CreateSchema()
+	_, err = p.Parse(input)
 	assert.NotNil(t, err)
 }
 
@@ -75,7 +73,7 @@ var schemaTests = []struct {
 	},
 }
 
-func TestStringToSchema(t *testing.T) {
+func TestConvertStringToSchema(t *testing.T) {
 	for _, test := range schemaTests {
 		schema, err := toSchema(test.in)
 		assert.Nil(t, err)
@@ -101,7 +99,7 @@ var validMatchTests = []struct {
 	{"SEND / 200", false},
 }
 
-func TestValidMatch(t *testing.T) {
+func TestValidStringMatch(t *testing.T) {
 	for _, test := range validMatchTests {
 		_, err := validMatch(test.in)
 		if test.valid {

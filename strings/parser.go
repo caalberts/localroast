@@ -1,4 +1,4 @@
-package schema
+package strings
 
 import (
 	"errors"
@@ -8,14 +8,12 @@ import (
 	"github.com/caalberts/localroast"
 )
 
-type String struct {
-	Strings []string
-}
+type Parser struct{}
 
-func (s *String) CreateSchema() ([]localroast.Schema, error) {
-	schemas := make([]localroast.Schema, len(s.Strings))
-	for i, str := range s.Strings {
-		schema, err := toSchema(str)
+func (p *Parser) Parse(input []string) ([]localroast.Schema, error) {
+	schemas := make([]localroast.Schema, len(input))
+	for i, in := range input {
+		schema, err := toSchema(in)
 		if err != nil {
 			return schemas, err
 		}

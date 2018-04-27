@@ -1,59 +1,39 @@
 package main
 
 import (
-	"errors"
 	"flag"
-	"io/ioutil"
 	"log"
 
 	"github.com/caalberts/localroast"
 	"github.com/caalberts/localroast/http"
-	"github.com/caalberts/localroast/schema"
+	"github.com/caalberts/localroast/json"
+	"github.com/caalberts/localroast/strings"
 )
 
-type parser interface {
-	CreateSchema() ([]localroast.Schema, error)
+type command interface {
+	Execute(args []string) ([]localroast.Schema, error)
 }
 
-func main() {
-	port := flag.String("port", "8080", "port number")
-	json := flag.Bool("json", false, "json")
+var port = flag.String("port", "8080", "port number")
+var useJSON = flag.Bool("json", false, "json")
 
+func main() {
 	flag.Parse()
 	args := flag.Args()
 
-	var p parser
-	if *json {
-		bytes := readJSON(args)
-		p = &schema.JSON{Bytes: bytes}
+	var cmd command
+	if *useJSON {
+		cmd = json.NewCommand()
 	} else {
-		input := parseInput(args)
-		p = &schema.String{Strings: input}
+		cmd = strings.NewCommand()
 	}
 
-	schemas, err := p.CreateSchema()
-	handle(err)
-
-	server := http.NewServer(*port, schemas)
-	log.Fatal(server.ListenAndServe())
-}
-
-func readJSON(args []string) []byte {
-	filepath := args[0]
-	bytes, err := ioutil.ReadFile(filepath)
-	handle(err)
-
-	return bytes
-}
-
-func parseInput(args []string) []string {
-	if len(args) < 1 {
-		log.Fatal(errors.New("Please define an endpoint in the format '<METHOD> <PATH> <STATUS_CODE>'. e.g 'GET / 200'"))
+	schema, err := cmd.Execute(args)
+	if err != nil {
+		log.Fatal(err)
 	}
-	return args
-}
 
-func handle(err error) {
+	err = http.NewServer(*port, schema).ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
 	}
