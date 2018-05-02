@@ -17,7 +17,7 @@ go get -u github.com/caalberts/localroast
 
 ### JSON file
 
-To start localroast using a JSON path, use the `-json` flag, followed by the path to the JSON file.
+To start a local stub server using a JSON file, use the `-json` flag, followed by the path to the JSON file.
 
 ```sh
 localroast -json examples/stubs.json
@@ -44,7 +44,7 @@ See [examples/stubs.json](examples/stubs.json) for more.
 
 Endpoints are defined in the format `'<METHOD> <PATH> <STATUS_CODE>'`, for example `'GET / 200'`. Multiple endpoint definitions are created using successive string arguments.
 
-To start Localroast:
+To start a local stub server using CLI arguments:
 ```sh
 localroast \
   'GET / 200' \
