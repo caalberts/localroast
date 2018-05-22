@@ -76,3 +76,25 @@ func TestNewMux(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(body)
 	assert.Equal(t, "404 page not found\n", string(bodyBytes))
 }
+
+func TestPathParam(t *testing.T) {
+	schema := localroast.Schema{
+		Method:   "GET",
+		Path:     "/users/:id",
+		Status:   200,
+		Response: []byte(`{"success": true}`),
+	}
+
+	type testData struct {
+		Success bool `json:"success"`
+	}
+	mux := NewMux([]localroast.Schema{schema})
+
+	testPath := "/users/1"
+
+	req := httptest.NewRequest(schema.Method, testPath, nil)
+	resp := httptest.NewRecorder()
+	mux.ServeHTTP(resp, req)
+
+	assert.Equal(t, schema.Status, resp.Code)
+}
