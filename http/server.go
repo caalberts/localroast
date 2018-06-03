@@ -5,59 +5,33 @@ import (
 	"net/http"
 
 	"github.com/caalberts/localroast"
+	"github.com/julienschmidt/httprouter"
 )
 
 func NewServer(port string, schemas []localroast.Schema) *http.Server {
-	mux := NewMux(schemas)
+	router := NewRouter(schemas)
 
 	log.Println("Localroast brewing on port " + port)
 	return &http.Server{
 		Addr:    ":" + port,
-		Handler: mux,
+		Handler: router,
 	}
 }
 
-type route struct {
-	method string
-	path   string
-}
-type response struct {
-	code int
-	body []byte
-}
-type Mux map[route]response
+func NewRouter(schemas []localroast.Schema) http.Handler {
+	router := httprouter.New()
 
-func NewMux(schemas []localroast.Schema) Mux {
-	mux := make(Mux)
+	handlerFunc := func(s localroast.Schema) httprouter.Handle {
+		return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(s.Status)
+			w.Write(s.Response)
+		}
+	}
+
 	for _, schema := range schemas {
-		route := route{
-			method: schema.Method,
-			path:   schema.Path,
-		}
-		resp := response{
-			code: schema.Status,
-			body: schema.Response,
-		}
-		mux[route] = resp
-	}
-	return mux
-}
-
-func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	route := route{
-		method: r.Method,
-		path:   r.URL.Path,
-	}
-	resp, found := m[route]
-	if !found {
-		log.Printf("%v: Not Found\n", route)
-		http.NotFound(w, r)
-		return
+		router.Handle(schema.Method, schema.Path, handlerFunc(schema))
 	}
 
-	log.Printf("%v: %d - %v\n", route, resp.code, resp.body)
-	w.WriteHeader(resp.code)
-	w.Write(resp.body)
+	return router
 }

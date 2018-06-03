@@ -19,7 +19,7 @@ func TestNewServer(t *testing.T) {
 	assert.Equal(t, ":8888", server.Addr)
 }
 
-func TestNewMux(t *testing.T) {
+func TestNewRouter(t *testing.T) {
 	schemas := []localroast.Schema{
 		localroast.Schema{
 			Method:   "GET",
@@ -47,28 +47,30 @@ func TestNewMux(t *testing.T) {
 		IDs     []int  `json:"ids"`
 		Message string `json:"message"`
 	}
-	mux := NewMux(schemas)
+	router := NewRouter(schemas)
 
 	var expected, actual testData
 
 	for _, schema := range schemas {
-		req := httptest.NewRequest(schema.Method, schema.Path, nil)
-		resp := httptest.NewRecorder()
-		mux.ServeHTTP(resp, req)
+		t.Run(schema.Method+schema.Path, func(t *testing.T) {
+			req := httptest.NewRequest(schema.Method, schema.Path, nil)
+			resp := httptest.NewRecorder()
+			router.ServeHTTP(resp, req)
 
-		assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
-		assert.Equal(t, schema.Status, resp.Code)
+			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+			assert.Equal(t, schema.Status, resp.Code)
 
-		body := resp.Result().Body
-		defer body.Close()
-		json.NewDecoder(body).Decode(&actual)
-		json.Unmarshal(schema.Response, &expected)
-		assert.Equal(t, expected, actual)
+			body := resp.Result().Body
+			defer body.Close()
+			json.NewDecoder(body).Decode(&actual)
+			json.Unmarshal(schema.Response, &expected)
+			assert.Equal(t, expected, actual)
+		})
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/unknown", nil)
 	resp := httptest.NewRecorder()
-	mux.ServeHTTP(resp, req)
+	router.ServeHTTP(resp, req)
 
 	assert.Equal(t, http.StatusNotFound, resp.Code)
 	body := resp.Result().Body
@@ -88,7 +90,7 @@ func TestPathParam(t *testing.T) {
 	type testData struct {
 		Success bool `json:"success"`
 	}
-	mux := NewMux([]localroast.Schema{schema})
+	mux := NewRouter([]localroast.Schema{schema})
 
 	testPath := "/users/1"
 
