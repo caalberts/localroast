@@ -6,80 +6,82 @@ import (
 
 	"github.com/caalberts/localroast"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type mockReader struct {
-	result []byte
-	called bool
-	args   []string
-	err    error
+	mock.Mock
 }
 
-func (r *mockReader) Read(args []string) ([]byte, error) {
-	r.called = true
-	r.args = args
-	return r.result, r.err
+func (m *mockReader) Read(strs []string) ([]byte, error) {
+	args := m.Called(strs)
+	return args.Get(0).([]byte), args.Error(1)
 }
 
 type mockParser struct {
-	result []localroast.Schema
-	called bool
-	args   []byte
-	err    error
+	mock.Mock
 }
 
-func (p *mockParser) Parse(bytes []byte) ([]localroast.Schema, error) {
-	p.called = true
-	p.args = bytes
-	return p.result, p.err
+func (m *mockParser) Parse(bytes []byte) ([]localroast.Schema, error) {
+	args := m.Called(bytes)
+	return args.Get(0).([]localroast.Schema), args.Error(1)
 }
 
 func TestExecuteJSONCommand(t *testing.T) {
-	r := &mockReader{result: []byte("content")}
-	p := &mockParser{result: []localroast.Schema{}}
+	r := new(mockReader)
+	p := new(mockParser)
+
+	args := []string{"filename"}
+	mockResult := []byte("content")
+	r.On("Read", args).Return(mockResult, nil)
+	p.On("Parse", mockResult).Return([]localroast.Schema{}, nil)
 
 	cmd := &Command{r, p}
-	args := []string{"filename"}
 	schema, err := cmd.Execute(args)
 
 	assert.Nil(t, err)
-	assert.Equal(t, p.result, schema)
+	assert.Equal(t, []localroast.Schema{}, schema)
 
-	assert.True(t, r.called)
-	assert.Equal(t, args, r.args)
-
-	assert.True(t, p.called)
-	assert.Equal(t, r.result, p.args)
+	r.AssertExpectations(t)
+	p.AssertExpectations(t)
 }
 
 func TestReadError(t *testing.T) {
-	r := &mockReader{err: errors.New("Failed to read file")}
-	p := &mockParser{}
+	r := new(mockReader)
+	p := new(mockParser)
+
+	args := []string{"fakefile"}
+	errorMsg := "Failed to read file"
+	r.On("Read", args).Return([]byte(""), errors.New(errorMsg))
 
 	cmd := &Command{r, p}
-	args := []string{"fakefile"}
 	schema, err := cmd.Execute(args)
 
 	assert.NotNil(t, err)
 	assert.Equal(t, "Failed to read file", err.Error())
 	assert.Nil(t, schema)
 
-	assert.True(t, r.called)
-	assert.False(t, p.called)
+	r.AssertExpectations(t)
+	p.AssertNotCalled(t, "Parse")
 }
 
 func TestParseError(t *testing.T) {
-	r := &mockReader{result: []byte("content")}
-	p := &mockParser{err: errors.New("Failed to parse schema")}
+	mockResult := []byte("content")
+	r := new(mockReader)
+	p := new(mockParser)
+
+	args := []string{"filename"}
+	errorMsg := "Failed to parse schema"
+	r.On("Read", args).Return(mockResult, nil)
+	p.On("Parse", mockResult).Return([]localroast.Schema{}, errors.New(errorMsg))
 
 	cmd := &Command{r, p}
-	args := []string{"filename"}
 	schema, err := cmd.Execute(args)
 
 	assert.NotNil(t, err)
-	assert.Equal(t, "Failed to parse schema", err.Error())
+	assert.Equal(t, errorMsg, err.Error())
 	assert.Nil(t, schema)
 
-	assert.True(t, r.called)
-	assert.True(t, p.called)
+	r.AssertExpectations(t)
+	p.AssertExpectations(t)
 }
