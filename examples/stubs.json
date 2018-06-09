@@ -27,6 +27,17 @@
     },
     {
         "method": "GET",
+        "path": "/users/:id",
+        "status": 200,
+        "response": {
+            "success": true,
+            "id": 5,
+            "name": "John Dough",
+            "email": "john@dough.com"
+        }
+    },
+    {
+        "method": "GET",
         "path": "/admin",
         "status": 401,
         "response": {

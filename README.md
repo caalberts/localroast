@@ -23,7 +23,7 @@ To start a local stub server using a JSON file, use the `-json` flag, followed b
 localroast -json examples/stubs.json
 ```
 
-The JSON file must be a JSON array containing endpoint definitions. Each endpoint is represented as a JSON object with keys `method`, `path`, `status` and `response`. A valid JSON file would look like this:
+The JSON file must be a JSON array containing endpoint definitions. Each endpoint is represented as a JSON object with keys `method`, `path`, `status` and `response`. `response` can be any valid JSON object.
 ```json
 [
   {
