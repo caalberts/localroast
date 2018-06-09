@@ -23,22 +23,25 @@ func TestParseSchemaFromJSON(t *testing.T) {
 	schemas, err := p.Parse(validJSON)
 
 	assert.Nil(t, err)
-	assert.Equal(t, 4, len(schemas))
+	assert.Equal(t, 5, len(schemas))
 
 	assert.Equal(t, http.MethodGet, schemas[0].Method)
 	assert.Equal(t, http.MethodGet, schemas[1].Method)
 	assert.Equal(t, http.MethodPost, schemas[2].Method)
 	assert.Equal(t, http.MethodGet, schemas[3].Method)
+	assert.Equal(t, http.MethodGet, schemas[4].Method)
 
 	assert.Equal(t, "/", schemas[0].Path)
 	assert.Equal(t, "/users", schemas[1].Path)
 	assert.Equal(t, "/users", schemas[2].Path)
-	assert.Equal(t, "/admin", schemas[3].Path)
+	assert.Equal(t, "/users/:id", schemas[3].Path)
+	assert.Equal(t, "/admin", schemas[4].Path)
 
 	assert.Equal(t, http.StatusOK, schemas[0].Status)
 	assert.Equal(t, http.StatusOK, schemas[1].Status)
 	assert.Equal(t, http.StatusCreated, schemas[2].Status)
-	assert.Equal(t, http.StatusUnauthorized, schemas[3].Status)
+	assert.Equal(t, http.StatusOK, schemas[3].Status)
+	assert.Equal(t, http.StatusUnauthorized, schemas[4].Status)
 
 	var expected, response testData
 	json.Unmarshal([]byte(`{"success": true}`), &expected)
@@ -60,10 +63,19 @@ func TestParseSchemaFromJSON(t *testing.T) {
 	assert.Equal(t, expected, response)
 
 	json.Unmarshal([]byte(`{
+		"success": true,
+		"id": 5,
+		"name": "John Dough",
+		"email": "john@dough.com"
+	}`), &expected)
+	json.Unmarshal([]byte(schemas[3].Response), &response)
+	assert.Equal(t, expected, response)
+
+	json.Unmarshal([]byte(`{
 		"success": false,
 		"message": "unauthorized"
 	}`), &expected)
-	json.Unmarshal([]byte(schemas[3].Response), &response)
+	json.Unmarshal([]byte(schemas[4].Response), &response)
 	assert.Equal(t, expected, response)
 }
 
