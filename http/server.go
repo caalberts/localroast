@@ -8,7 +8,13 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func NewServer(port string, schemas []localroast.Schema) *http.Server {
+type Server interface {
+	ListenAndServe() error
+}
+
+type ServerFunc func(port string, schemas []localroast.Schema) Server
+
+func NewServer(port string, schemas []localroast.Schema) Server {
 	router := NewRouter(schemas)
 
 	log.Println("Localroast brewing on port " + port)

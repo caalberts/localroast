@@ -2,7 +2,7 @@ package json
 
 import (
 	"github.com/caalberts/localroast"
-	"github.com/caalberts/localroast/io"
+	"github.com/caalberts/localroast/http"
 )
 
 type fileReader interface {
@@ -16,25 +16,29 @@ type parser interface {
 type Command struct {
 	r fileReader
 	p parser
+	s http.ServerFunc
 }
 
 func NewCommand() *Command {
 	return &Command{
-		r: &io.FileReader{},
+		r: &FileReader{},
 		p: &Parser{},
+		s: http.NewServer,
 	}
 }
 
-func (c *Command) Execute(args []string) ([]localroast.Schema, error) {
+func (c *Command) Execute(args []string) error {
 	bytes, err := c.r.Read(args)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	schema, err := c.p.Parse(bytes)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return schema, nil
+	server := c.s("8080", schema)
+
+	return server.ListenAndServe()
 }

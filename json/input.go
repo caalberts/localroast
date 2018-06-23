@@ -1,4 +1,4 @@
-package io
+package json
 
 import (
 	"errors"
