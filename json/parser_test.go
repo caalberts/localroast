@@ -19,7 +19,7 @@ type testData struct {
 var validJSON, _ = ioutil.ReadFile("../examples/stubs.json")
 
 func TestParseSchemaFromJSON(t *testing.T) {
-	p := &Parser{}
+	p := Parser{}
 	schemas, err := p.Parse(validJSON)
 
 	assert.Nil(t, err)
@@ -90,7 +90,7 @@ var missingKeys = `
 `
 
 func TestParseSchemaWithMissingKeys(t *testing.T) {
-	p := &Parser{}
+	p := Parser{}
 	_, err := p.Parse([]byte(missingKeys))
 	assert.NotNil(t, err)
 	assert.Equal(t, "Missing required fields: method, path, status", err.Error())
@@ -110,7 +110,7 @@ var invalidJSON = `
 `
 
 func TestParseSchemaFromInvalidJSON(t *testing.T) {
-	p := &Parser{}
+	p := Parser{}
 	_, err := p.Parse([]byte(invalidJSON))
 	assert.NotNil(t, err)
 }
@@ -128,7 +128,7 @@ var jsonObject = `
 `
 
 func TestParseSchemaFromJSONObject(t *testing.T) {
-	p := &Parser{}
+	p := Parser{}
 	_, err := p.Parse([]byte(jsonObject))
 	assert.NotNil(t, err)
 }

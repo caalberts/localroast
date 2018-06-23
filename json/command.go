@@ -19,15 +19,15 @@ type Command struct {
 	s http.ServerFunc
 }
 
-func NewCommand() *Command {
-	return &Command{
-		r: &FileReader{},
-		p: &Parser{},
+func NewCommand() Command {
+	return Command{
+		r: FileReader{},
+		p: Parser{},
 		s: http.NewServer,
 	}
 }
 
-func (c *Command) Execute(args []string) error {
+func (c Command) Execute(args []string) error {
 	bytes, err := c.r.Read(args)
 	if err != nil {
 		return err

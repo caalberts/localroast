@@ -9,7 +9,7 @@ import (
 func TestReadFile(t *testing.T) {
 	var bytes []byte
 	var err error
-	r := &FileReader{}
+	r := FileReader{}
 
 	t.Run("valid file", func(t *testing.T) {
 		bytes, err = r.Read([]string{"../examples/stubs.json"})

@@ -17,7 +17,7 @@ type stub struct {
 	Response json.RawMessage `json:"response"`
 }
 
-func (p *Parser) Parse(bytes []byte) ([]localroast.Schema, error) {
+func (p Parser) Parse(bytes []byte) ([]localroast.Schema, error) {
 	var stubs []stub
 	err := json.Unmarshal(bytes, &stubs)
 	if err != nil {

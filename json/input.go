@@ -8,7 +8,7 @@ import (
 
 type FileReader struct{}
 
-func (r *FileReader) Read(args []string) ([]byte, error) {
+func (r FileReader) Read(args []string) ([]byte, error) {
 	if len(args) < 1 {
 		return nil, errors.New("A file is required")
 	}

@@ -62,7 +62,7 @@ func TestExecuteJSONCommand(t *testing.T) {
 	p.On("Parse", mockResult).Return(mockSchema, nil)
 	s.On("ListenAndServe").Return(nil)
 
-	cmd := &Command{r, p, sFunc}
+	cmd := Command{r, p, sFunc}
 	err := cmd.Execute(args)
 
 	assert.Nil(t, err)
@@ -85,7 +85,7 @@ func TestReadError(t *testing.T) {
 	errorMsg := "Failed to read file"
 	r.On("Read", args).Return([]byte(""), errors.New(errorMsg))
 
-	cmd := &Command{r, p, sFunc}
+	cmd := Command{r, p, sFunc}
 	err := cmd.Execute(args)
 
 	assert.NotNil(t, err)
@@ -110,7 +110,7 @@ func TestParseError(t *testing.T) {
 	r.On("Read", args).Return(mockResult, nil)
 	p.On("Parse", mockResult).Return([]localroast.Schema{}, errors.New(errorMsg))
 
-	cmd := &Command{r, p, sFunc}
+	cmd := Command{r, p, sFunc}
 	err := cmd.Execute(args)
 
 	assert.NotNil(t, err)
