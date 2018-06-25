@@ -47,7 +47,7 @@ func TestNewRouter(t *testing.T) {
 		IDs     []int  `json:"ids"`
 		Message string `json:"message"`
 	}
-	router := NewRouter(schemas)
+	router := newRouter(schemas)
 
 	var expected, actual testData
 
@@ -90,7 +90,7 @@ func TestPathParam(t *testing.T) {
 	type testData struct {
 		Success bool `json:"success"`
 	}
-	mux := NewRouter([]localroast.Schema{schema})
+	mux := newRouter([]localroast.Schema{schema})
 
 	testPath := "/users/1"
 

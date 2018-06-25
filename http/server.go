@@ -8,14 +8,17 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// Server interface.
 type Server interface {
 	ListenAndServe() error
 }
 
+// ServerFunc is a constructor for a new server.
 type ServerFunc func(port string, schemas []localroast.Schema) Server
 
+// NewServer creates a http server running on given port with handlers based on given schema.
 func NewServer(port string, schemas []localroast.Schema) Server {
-	router := NewRouter(schemas)
+	router := newRouter(schemas)
 
 	log.Println("Localroast brewing on port " + port)
 	return &http.Server{
@@ -24,7 +27,7 @@ func NewServer(port string, schemas []localroast.Schema) Server {
 	}
 }
 
-func NewRouter(schemas []localroast.Schema) http.Handler {
+func newRouter(schemas []localroast.Schema) http.Handler {
 	router := httprouter.New()
 
 	handlerFunc := func(s localroast.Schema) httprouter.Handle {
