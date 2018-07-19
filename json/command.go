@@ -32,7 +32,7 @@ func NewCommand() Command {
 }
 
 // Execute runs the command and start a server.
-func (c Command) Execute(args []string) error {
+func (c Command) Execute(port string, args []string) error {
 	bytes, err := c.r.Read(args)
 	if err != nil {
 		return err
@@ -43,7 +43,7 @@ func (c Command) Execute(args []string) error {
 		return err
 	}
 
-	server := c.s("8080", schema)
+	server := c.s(port, schema)
 
 	return server.ListenAndServe()
 }

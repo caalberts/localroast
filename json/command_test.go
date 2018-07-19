@@ -37,14 +37,18 @@ func (m *mockServer) ListenAndServe() error {
 	return args.Error(0)
 }
 
+var port = "8080"
+
 func TestExecuteJSONCommand(t *testing.T) {
 	r := new(mockReader)
 	p := new(mockParser)
 	s := new(mockServer)
 
 	var parsedSchema []localroast.Schema
+	var serverPort string
 	sFunc := func(port string, schemas []localroast.Schema) http.Server {
 		parsedSchema = schemas
+		serverPort = port
 		return s
 	}
 
@@ -63,10 +67,11 @@ func TestExecuteJSONCommand(t *testing.T) {
 	s.On("ListenAndServe").Return(nil)
 
 	cmd := Command{r, p, sFunc}
-	err := cmd.Execute(args)
+	err := cmd.Execute(port, args)
 
 	assert.Nil(t, err)
 	assert.Equal(t, mockSchema, parsedSchema)
+	assert.Equal(t, port, serverPort)
 
 	r.AssertExpectations(t)
 	p.AssertExpectations(t)
@@ -86,7 +91,7 @@ func TestReadError(t *testing.T) {
 	r.On("Read", args).Return([]byte(""), errors.New(errorMsg))
 
 	cmd := Command{r, p, sFunc}
-	err := cmd.Execute(args)
+	err := cmd.Execute(port, args)
 
 	assert.NotNil(t, err)
 	assert.Equal(t, "Failed to read file", err.Error())
@@ -111,7 +116,7 @@ func TestParseError(t *testing.T) {
 	p.On("Parse", mockResult).Return([]localroast.Schema{}, errors.New(errorMsg))
 
 	cmd := Command{r, p, sFunc}
-	err := cmd.Execute(args)
+	err := cmd.Execute(port, args)
 
 	assert.NotNil(t, err)
 	assert.Equal(t, errorMsg, err.Error())

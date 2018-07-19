@@ -7,13 +7,13 @@ import (
 	"github.com/caalberts/localroast/json"
 )
 
-var port = flag.String("port", "8080", "port number")
-
 func main() {
+	port := flag.String("port", "8080", "port number")
+
 	flag.Parse()
 	args := flag.Args()
 
-	err := json.NewCommand().Execute(args)
+	err := json.NewCommand().Execute(*port, args)
 	if err != nil {
 		log.Fatal(err)
 	}
