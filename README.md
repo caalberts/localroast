@@ -34,3 +34,10 @@ The command takes a single argument, a path to a JSON file. The JSON file must b
 ```
 
 See [examples/stubs.json](examples/stubs.json) for more.
+
+## Features
+
+- [x] json input
+- [x] path variable
+- [ ] yml input
+- [ ] autoload file changes
