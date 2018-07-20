@@ -3,6 +3,8 @@
 [![CircleCI](https://circleci.com/gh/caalberts/localroast/tree/master.svg?style=svg)](https://circleci.com/gh/caalberts/localroast/tree/master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/caalberts/localroast)](https://goreportcard.com/report/github.com/caalberts/localroast)
 
+![localroast](coffee.png)
+
 ## Overview
 
 Localroast is a lightweight Go command line tool to run a local stub http service. The endpoints and the stubbed responses are defined in a JSON file.
