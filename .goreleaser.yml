@@ -1,0 +1,32 @@
+project_name: localroast
+builds:
+  - main: ./cmd/localroast/main.go
+    env:
+      - CGO_ENABLED=0
+archive:
+  replacements:
+    darwin: Darwin
+    linux: Linux
+    windows: Windows
+    386: i386
+    amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+brew:
+  github:
+    owner: caalberts
+    name: homebrew-tap
+  folder: Formula
+  homepage: https://github.com/caalberts/localroast 
+  description: Lightweight HTTP server stubs
+  test: |
+      system "#{bin}/localroast -v"
+
