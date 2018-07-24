@@ -20,7 +20,7 @@ type ServerFunc func(port string, schemas []localroast.Schema) Server
 func NewServer(port string, schemas []localroast.Schema) Server {
 	router := newRouter(schemas)
 
-	log.Println("Localroast brewing on port " + port)
+	log.Println("brewing on port " + port)
 	return &http.Server{
 		Addr:    ":" + port,
 		Handler: router,
