@@ -6,5 +6,13 @@ jobs:
     working_directory: /go/src/github.com/caalberts/localroast
     steps:
       - checkout
-      - run: make setup
-      - run: make all
+      - run: make build
+  test:
+    docker:
+      - image: circleci/golang:1.10
+    working_directory: /go/src/github.com/caalberts/localroast
+    steps:
+      - checkout
+      - run: go get github.com/mattn/goveralls
+      - run: make test-cover
+      - run: /go/bin/goveralls -coverprofile=coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
