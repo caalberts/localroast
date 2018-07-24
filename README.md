@@ -1,6 +1,7 @@
 # Localroast
 
 [![CircleCI](https://circleci.com/gh/caalberts/localroast/tree/master.svg?style=svg)](https://circleci.com/gh/caalberts/localroast/tree/master)
+[![Coverage Status](https://coveralls.io/repos/github/caalberts/localroast/badge.svg?branch=master)](https://coveralls.io/github/caalberts/localroast?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/caalberts/localroast)](https://goreportcard.com/report/github.com/caalberts/localroast)
 
 ![localroast](coffee.png)
