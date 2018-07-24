@@ -16,3 +16,9 @@ jobs:
       - run: go get github.com/mattn/goveralls
       - run: make test-cover
       - run: /go/bin/goveralls -coverprofile=coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - test
