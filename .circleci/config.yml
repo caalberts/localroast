@@ -1,4 +1,5 @@
 version: 2
+
 jobs:
   build:
     docker:
@@ -10,6 +11,14 @@ jobs:
       - run: go get github.com/mattn/goveralls
       - run: make test-cover
       - run: /go/bin/goveralls -coverprofile=coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
+  release:
+    docker:
+      - image: circleci/golang:1.10
+    working_directory: /go/src/github.com/caalberts/localroast
+    steps:
+      - checkout
+      - run: curl -sL https://git.io/goreleaser | bash
+
 workflows:
   version: 2
   build:
@@ -18,3 +27,19 @@ workflows:
           filters:
             tags:
               ignore: /v[0-9]+(\.[0-9]+)*(-.*)*/
+  build_release:
+    jobs:
+      - build:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(-.*)*/
+      - release:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(-.*)*/
