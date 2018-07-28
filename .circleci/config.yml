@@ -17,6 +17,7 @@ jobs:
     working_directory: /go/src/github.com/caalberts/localroast
     steps:
       - checkout
+      - run: make setup  
       - run: curl -sL https://git.io/goreleaser | bash
 
 workflows:
