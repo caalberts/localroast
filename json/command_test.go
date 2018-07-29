@@ -2,29 +2,31 @@ package json
 
 import (
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/caalberts/localroast"
 	"github.com/caalberts/localroast/http"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-type mockReader struct {
+type mockValidator struct {
 	mock.Mock
 }
 
-func (m *mockReader) Read(strs []string) ([]byte, error) {
+func (m *mockValidator) Validate(strs []string) error {
 	args := m.Called(strs)
-	return args.Get(0).([]byte), args.Error(1)
+	return args.Error(0)
 }
 
 type mockParser struct {
 	mock.Mock
 }
 
-func (m *mockParser) Parse(bytes []byte) ([]localroast.Schema, error) {
-	args := m.Called(bytes)
+func (m *mockParser) Parse(r io.Reader) ([]localroast.Schema, error) {
+	args := m.Called(r)
 	return args.Get(0).([]localroast.Schema), args.Error(1)
 }
 
@@ -37,10 +39,32 @@ func (m *mockServer) ListenAndServe() error {
 	return args.Error(0)
 }
 
-var port = "8080"
+const (
+	port     = "8080"
+	testFile = "fixtures/test.json"
+)
+
+func setup(t *testing.T, fileContent string) afero.Fs {
+	appFS := afero.NewMemMapFs()
+
+	appFS.MkdirAll("fixtures", 0755)
+	afero.WriteFile(appFS, testFile, []byte(fileContent), 0644)
+
+	return appFS
+}
 
 func TestExecuteJSONCommand(t *testing.T) {
-	r := new(mockReader)
+	validJSON := `
+	[
+		{
+			"method": "GET",
+			"path": "/",
+			"status": 200,
+			"response": {}
+		}
+	]`
+	fs := setup(t, validJSON)
+	r := new(mockValidator)
 	p := new(mockParser)
 	s := new(mockServer)
 
@@ -52,8 +76,7 @@ func TestExecuteJSONCommand(t *testing.T) {
 		return s
 	}
 
-	args := []string{"filename"}
-	mockResult := []byte("content")
+	args := []string{testFile}
 	mockSchema := []localroast.Schema{
 		{
 			Method:   "GET",
@@ -62,11 +85,11 @@ func TestExecuteJSONCommand(t *testing.T) {
 			Response: []byte("{}"),
 		},
 	}
-	r.On("Read", args).Return(mockResult, nil)
-	p.On("Parse", mockResult).Return(mockSchema, nil)
+	r.On("Validate", args).Return(nil)
+	p.On("Parse", mock.Anything).Return(mockSchema, nil)
 	s.On("ListenAndServe").Return(nil)
 
-	cmd := Command{r, p, sFunc}
+	cmd := Command{r, p, sFunc, fs}
 	err := cmd.Execute(port, args)
 
 	assert.Nil(t, err)
@@ -79,7 +102,8 @@ func TestExecuteJSONCommand(t *testing.T) {
 }
 
 func TestReadError(t *testing.T) {
-	r := new(mockReader)
+	fs := setup(t, "")
+	r := new(mockValidator)
 	p := new(mockParser)
 	s := new(mockServer)
 	sFunc := func(port string, schemas []localroast.Schema) http.Server {
@@ -88,9 +112,9 @@ func TestReadError(t *testing.T) {
 
 	args := []string{"fakefile"}
 	errorMsg := "Failed to read file"
-	r.On("Read", args).Return([]byte(""), errors.New(errorMsg))
+	r.On("Validate", args).Return(errors.New(errorMsg))
 
-	cmd := Command{r, p, sFunc}
+	cmd := Command{r, p, sFunc, fs}
 	err := cmd.Execute(port, args)
 
 	assert.NotNil(t, err)
@@ -102,20 +126,20 @@ func TestReadError(t *testing.T) {
 }
 
 func TestParseError(t *testing.T) {
-	mockResult := []byte("content")
-	r := new(mockReader)
+	fs := setup(t, "")
+	r := new(mockValidator)
 	p := new(mockParser)
 	s := new(mockServer)
 	sFunc := func(port string, schemas []localroast.Schema) http.Server {
 		return s
 	}
 
-	args := []string{"filename"}
+	args := []string{testFile}
 	errorMsg := "Failed to parse schema"
-	r.On("Read", args).Return(mockResult, nil)
-	p.On("Parse", mockResult).Return([]localroast.Schema{}, errors.New(errorMsg))
+	r.On("Validate", args).Return(nil)
+	p.On("Parse", mock.Anything).Return([]localroast.Schema{}, errors.New(errorMsg))
 
-	cmd := Command{r, p, sFunc}
+	cmd := Command{r, p, sFunc, fs}
 	err := cmd.Execute(port, args)
 
 	assert.NotNil(t, err)

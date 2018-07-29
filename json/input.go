@@ -2,30 +2,24 @@ package json
 
 import (
 	"errors"
-	"io/ioutil"
 	"strings"
 )
 
-type FileReader struct{}
+type Validator struct{}
 
-func (r FileReader) Read(args []string) ([]byte, error) {
+func (v Validator) Validate(args []string) error {
 	if len(args) < 1 {
-		return nil, errors.New("A file is required")
+		return errors.New("A file is required")
 	}
 
 	if len(args) > 1 {
-		return nil, errors.New("Too many arguments")
+		return errors.New("Too many arguments")
 	}
 
 	file := args[0]
 	if !strings.HasSuffix(file, ".json") {
-		return nil, errors.New("Input must be a JSON file")
+		return errors.New("Input must be a JSON file")
 	}
 
-	bytes, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, err
-	}
-
-	return bytes, nil
+	return nil
 }

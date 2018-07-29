@@ -3,6 +3,7 @@ package json
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/caalberts/localroast"
@@ -17,10 +18,9 @@ type stub struct {
 	Response json.RawMessage `json:"response"`
 }
 
-func (p Parser) Parse(bytes []byte) ([]localroast.Schema, error) {
+func (p Parser) Parse(r io.Reader) ([]localroast.Schema, error) {
 	var stubs []stub
-	err := json.Unmarshal(bytes, &stubs)
-	if err != nil {
+	if err := json.NewDecoder(r).Decode(&stubs); err != nil {
 		return []localroast.Schema{}, err
 	}
 

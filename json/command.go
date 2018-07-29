@@ -1,44 +1,57 @@
 package json
 
 import (
+	"io"
+
 	"github.com/caalberts/localroast"
 	"github.com/caalberts/localroast/http"
+	"github.com/spf13/afero"
 )
 
-type fileReader interface {
-	Read([]string) ([]byte, error)
+type validator interface {
+	Validate([]string) error
 }
 
 type parser interface {
-	Parse([]byte) ([]localroast.Schema, error)
+	Parse(io.Reader) ([]localroast.Schema, error)
 }
 
 // Command struct contains a file reader to read input file,
 // a parser to parse input into schema,
 // and a server constructor.
 type Command struct {
-	r fileReader
-	p parser
-	s http.ServerFunc
+	v  validator
+	p  parser
+	s  http.ServerFunc
+	fs fileSystem
+}
+
+type fileSystem interface {
+	Open(string) (afero.File, error)
 }
 
 // NewCommand creates a command with a JSON file reader and parser.
 func NewCommand() Command {
 	return Command{
-		r: FileReader{},
-		p: Parser{},
-		s: http.NewServer,
+		v:  Validator{},
+		p:  Parser{},
+		s:  http.NewServer,
+		fs: afero.NewOsFs(),
 	}
 }
 
 // Execute runs the command and start a server.
 func (c Command) Execute(port string, args []string) error {
-	bytes, err := c.r.Read(args)
+	if err := c.v.Validate(args); err != nil {
+		return err
+	}
+
+	file, err := c.fs.Open(args[0])
 	if err != nil {
 		return err
 	}
 
-	schema, err := c.p.Parse(bytes)
+	schema, err := c.p.Parse(file)
 	if err != nil {
 		return err
 	}

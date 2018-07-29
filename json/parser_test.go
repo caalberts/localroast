@@ -1,9 +1,8 @@
 package json
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,67 +15,45 @@ type testData struct {
 	Message string `json:"message"`
 }
 
-var validJSON, _ = ioutil.ReadFile("../examples/stubs.json")
+var validJSON = `
+[
+    {
+        "method": "GET",
+        "path": "/",
+        "status": 200,
+        "response": {
+            "success": true
+        }
+    },
+    {
+        "method": "GET",
+        "path": "/users",
+        "status": 200,
+        "response": {
+            "success": true,
+            "ids": [1, 2, 3]
+        }
+	}
+]`
 
-func TestParseSchemaFromJSON(t *testing.T) {
+func TestParse(t *testing.T) {
 	p := Parser{}
-	schemas, err := p.Parse(validJSON)
+	schemas, err := p.Parse(strings.NewReader(validJSON))
 
 	assert.Nil(t, err)
-	assert.Equal(t, 5, len(schemas))
+	assert.Equal(t, 2, len(schemas))
 
 	assert.Equal(t, http.MethodGet, schemas[0].Method)
 	assert.Equal(t, http.MethodGet, schemas[1].Method)
-	assert.Equal(t, http.MethodPost, schemas[2].Method)
-	assert.Equal(t, http.MethodGet, schemas[3].Method)
-	assert.Equal(t, http.MethodGet, schemas[4].Method)
 
 	assert.Equal(t, "/", schemas[0].Path)
 	assert.Equal(t, "/users", schemas[1].Path)
-	assert.Equal(t, "/users", schemas[2].Path)
-	assert.Equal(t, "/users/:id", schemas[3].Path)
-	assert.Equal(t, "/admin", schemas[4].Path)
 
 	assert.Equal(t, http.StatusOK, schemas[0].Status)
 	assert.Equal(t, http.StatusOK, schemas[1].Status)
-	assert.Equal(t, http.StatusCreated, schemas[2].Status)
-	assert.Equal(t, http.StatusOK, schemas[3].Status)
-	assert.Equal(t, http.StatusUnauthorized, schemas[4].Status)
 
-	var expected, response testData
-	json.Unmarshal([]byte(`{"success": true}`), &expected)
-	json.Unmarshal([]byte(schemas[0].Response), &response)
-	assert.Equal(t, expected, response)
-
-	json.Unmarshal([]byte(`{
-		"success": true,
-		"ids": [1, 2, 3]
-	}`), &expected)
-	json.Unmarshal([]byte(schemas[1].Response), &response)
-	assert.Equal(t, expected, response)
-
-	json.Unmarshal([]byte(`{
-		"success": true,
-		"id": 4
-	}`), &expected)
-	json.Unmarshal([]byte(schemas[2].Response), &response)
-	assert.Equal(t, expected, response)
-
-	json.Unmarshal([]byte(`{
-		"success": true,
-		"id": 5,
-		"name": "John Dough",
-		"email": "john@dough.com"
-	}`), &expected)
-	json.Unmarshal([]byte(schemas[3].Response), &response)
-	assert.Equal(t, expected, response)
-
-	json.Unmarshal([]byte(`{
-		"success": false,
-		"message": "unauthorized"
-	}`), &expected)
-	json.Unmarshal([]byte(schemas[4].Response), &response)
-	assert.Equal(t, expected, response)
+	assert.JSONEq(t, `{ "success": true }`, string(schemas[0].Response))
+	assert.JSONEq(t, `{ "success": true, "ids": [1, 2, 3] }`, string(schemas[1].Response))
 }
 
 var missingKeys = `
@@ -91,7 +68,7 @@ var missingKeys = `
 
 func TestParseSchemaWithMissingKeys(t *testing.T) {
 	p := Parser{}
-	_, err := p.Parse([]byte(missingKeys))
+	_, err := p.Parse(strings.NewReader(missingKeys))
 	assert.NotNil(t, err)
 	assert.Equal(t, "Missing required fields: method, path, status", err.Error())
 }
@@ -111,7 +88,7 @@ var invalidJSON = `
 
 func TestParseSchemaFromInvalidJSON(t *testing.T) {
 	p := Parser{}
-	_, err := p.Parse([]byte(invalidJSON))
+	_, err := p.Parse(strings.NewReader(invalidJSON))
 	assert.NotNil(t, err)
 }
 
@@ -129,6 +106,6 @@ var jsonObject = `
 
 func TestParseSchemaFromJSONObject(t *testing.T) {
 	p := Parser{}
-	_, err := p.Parse([]byte(jsonObject))
+	_, err := p.Parse(strings.NewReader(jsonObject))
 	assert.NotNil(t, err)
 }
