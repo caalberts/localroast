@@ -44,13 +44,19 @@ const (
 	testFile = "fixtures/test.json"
 )
 
-func setup(t *testing.T, fileContent string) afero.Fs {
+func setup(fileContent string) afero.Fs {
 	appFS := afero.NewMemMapFs()
 
 	appFS.MkdirAll("fixtures", 0755)
 	afero.WriteFile(appFS, testFile, []byte(fileContent), 0644)
 
 	return appFS
+}
+
+func resetMocks(v *mockValidator, p *mockParser, s *mockServer) {
+	v.Mock = mock.Mock{}
+	p.Mock = mock.Mock{}
+	s.Mock = mock.Mock{}
 }
 
 func TestExecuteJSONCommand(t *testing.T) {
@@ -63,8 +69,8 @@ func TestExecuteJSONCommand(t *testing.T) {
 			"response": {}
 		}
 	]`
-	fs := setup(t, validJSON)
-	r := new(mockValidator)
+	fs := setup(validJSON)
+	v := new(mockValidator)
 	p := new(mockParser)
 	s := new(mockServer)
 
@@ -76,76 +82,67 @@ func TestExecuteJSONCommand(t *testing.T) {
 		return s
 	}
 
-	args := []string{testFile}
-	mockSchema := []localroast.Schema{
-		{
-			Method:   "GET",
-			Path:     "/",
-			Status:   200,
-			Response: []byte("{}"),
-		},
-	}
-	r.On("Validate", args).Return(nil)
-	p.On("Parse", mock.Anything).Return(mockSchema, nil)
-	s.On("ListenAndServe").Return(nil)
+	cmd := Command{v, p, sFunc, fs}
 
-	cmd := Command{r, p, sFunc, fs}
-	err := cmd.Execute(port, args)
+	t.Run("successful command", func(t *testing.T) {
+		args := []string{testFile}
+		mockSchema := []localroast.Schema{
+			{
+				Method:   "GET",
+				Path:     "/",
+				Status:   200,
+				Response: []byte("{}"),
+			},
+		}
+		v.On("Validate", args).Return(nil)
+		p.On("Parse", mock.Anything).Return(mockSchema, nil)
+		s.On("ListenAndServe").Return(nil)
 
-	assert.Nil(t, err)
-	assert.Equal(t, mockSchema, parsedSchema)
-	assert.Equal(t, port, serverPort)
+		err := cmd.Execute(port, args)
 
-	r.AssertExpectations(t)
-	p.AssertExpectations(t)
-	s.AssertExpectations(t)
-}
+		assert.NoError(t, err)
+		assert.Equal(t, mockSchema, parsedSchema)
+		assert.Equal(t, port, serverPort)
 
-func TestReadError(t *testing.T) {
-	fs := setup(t, "")
-	r := new(mockValidator)
-	p := new(mockParser)
-	s := new(mockServer)
-	sFunc := func(port string, schemas []localroast.Schema) http.Server {
-		return s
-	}
+		v.AssertExpectations(t)
+		p.AssertExpectations(t)
+		s.AssertExpectations(t)
 
-	args := []string{"fakefile"}
-	errorMsg := "Failed to read file"
-	r.On("Validate", args).Return(errors.New(errorMsg))
+		resetMocks(v, p, s)
+	})
 
-	cmd := Command{r, p, sFunc, fs}
-	err := cmd.Execute(port, args)
+	t.Run("read error", func(t *testing.T) {
+		args := []string{"fakefile"}
+		errorMsg := "Failed to read file"
+		v.On("Validate", args).Return(errors.New(errorMsg))
 
-	assert.NotNil(t, err)
-	assert.Equal(t, "Failed to read file", err.Error())
+		err := cmd.Execute(port, args)
 
-	r.AssertExpectations(t)
-	p.AssertNotCalled(t, "Parse")
-	s.AssertNotCalled(t, "ListenAndServe")
-}
+		assert.Error(t, err)
+		assert.Equal(t, "Failed to read file", err.Error())
 
-func TestParseError(t *testing.T) {
-	fs := setup(t, "")
-	r := new(mockValidator)
-	p := new(mockParser)
-	s := new(mockServer)
-	sFunc := func(port string, schemas []localroast.Schema) http.Server {
-		return s
-	}
+		v.AssertExpectations(t)
+		p.AssertNotCalled(t, "Parse")
+		s.AssertNotCalled(t, "ListenAndServe")
 
-	args := []string{testFile}
-	errorMsg := "Failed to parse schema"
-	r.On("Validate", args).Return(nil)
-	p.On("Parse", mock.Anything).Return([]localroast.Schema{}, errors.New(errorMsg))
+		resetMocks(v, p, s)
+	})
 
-	cmd := Command{r, p, sFunc, fs}
-	err := cmd.Execute(port, args)
+	t.Run("parsing error", func(t *testing.T) {
+		args := []string{testFile}
+		errorMsg := "Failed to parse schema"
+		v.On("Validate", args).Return(nil)
+		p.On("Parse", mock.Anything).Return([]localroast.Schema{}, errors.New(errorMsg))
 
-	assert.NotNil(t, err)
-	assert.Equal(t, errorMsg, err.Error())
+		err := cmd.Execute(port, args)
 
-	r.AssertExpectations(t)
-	p.AssertExpectations(t)
-	s.AssertNotCalled(t, "ListenAndServe")
+		assert.Error(t, err)
+		assert.Equal(t, errorMsg, err.Error())
+
+		v.AssertExpectations(t)
+		p.AssertExpectations(t)
+		s.AssertNotCalled(t, "ListenAndServe")
+
+		resetMocks(v, p, s)
+	})
 }
