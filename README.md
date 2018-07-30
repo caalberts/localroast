@@ -12,6 +12,14 @@ Localroast is a lightweight Go command line tool to run a local stub http servic
 
 ## Installation
 
+From brew:
+
+```sh
+brew install caalberts/tap/localroast
+```
+
+From source:
+
 ```sh
 go get -u github.com/caalberts/localroast/cmd/localroast
 ```
