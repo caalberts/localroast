@@ -1,3 +1,4 @@
 /localroast
 vendor/
 dist/
+.idea/
