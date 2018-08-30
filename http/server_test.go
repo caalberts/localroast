@@ -2,7 +2,6 @@ package http
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,30 +9,39 @@ import (
 	"github.com/caalberts/localroast"
 
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 )
 
 func TestNewServer(t *testing.T) {
-	schema := localroast.Schema{Path: "/"}
 	port := "8888"
-	server := NewServer(port, []localroast.Schema{schema}).(*http.Server)
+	server := NewServer(port, []localroast.Schema{}).(*http.Server)
 	assert.Equal(t, ":8888", server.Addr)
 }
 
-func TestNewRouter(t *testing.T) {
+func TestNewRouterHasNoImplementation(t *testing.T) {
+	router := newRouter()
+	req := httptest.NewRequest("GET", "/", nil)
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+	assert.Equal(t, http.StatusNotImplemented, resp.Code)
+}
+
+func TestRouterWithUpdatedSchema(t *testing.T) {
+	router := newRouter()
 	schemas := []localroast.Schema{
-		localroast.Schema{
+		{
 			Method:   "GET",
 			Path:     "/",
 			Status:   200,
 			Response: []byte(`{"success": true}`),
 		},
-		localroast.Schema{
+		{
 			Method:   "GET",
 			Path:     "/users",
 			Status:   200,
 			Response: []byte(`{"success": true, "ids": [1, 2]}`),
 		},
-		localroast.Schema{
+		{
 			Method:   "POST",
 			Path:     "/users",
 			Status:   201,
@@ -47,10 +55,9 @@ func TestNewRouter(t *testing.T) {
 		IDs     []int  `json:"ids"`
 		Message string `json:"message"`
 	}
-	router := newRouter(schemas)
+	router.UpdateSchema(schemas)
 
 	var expected, actual testData
-
 	for _, schema := range schemas {
 		t.Run(schema.Method+schema.Path, func(t *testing.T) {
 			req := httptest.NewRequest(schema.Method, schema.Path, nil)
@@ -87,16 +94,14 @@ func TestPathParam(t *testing.T) {
 		Response: []byte(`{"success": true}`),
 	}
 
-	type testData struct {
-		Success bool `json:"success"`
-	}
-	mux := newRouter([]localroast.Schema{schema})
+	router := newRouter()
+	router.UpdateSchema([]localroast.Schema{schema})
 
 	testPath := "/users/1"
 
 	req := httptest.NewRequest(schema.Method, testPath, nil)
 	resp := httptest.NewRecorder()
-	mux.ServeHTTP(resp, req)
+	router.ServeHTTP(resp, req)
 
 	assert.Equal(t, schema.Status, resp.Code)
 }

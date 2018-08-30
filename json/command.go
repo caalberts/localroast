@@ -51,12 +51,12 @@ func (c Command) Execute(port string, args []string) error {
 		return err
 	}
 
-	schema, err := c.p.Parse(file)
+	schemas, err := c.p.Parse(file)
 	if err != nil {
 		return err
 	}
 
-	server := c.s(port, schema)
+	server := c.s(port, schemas)
 
 	return server.ListenAndServe()
 }
