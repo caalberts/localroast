@@ -18,9 +18,9 @@ type stub struct {
 	Response json.RawMessage `json:"response"`
 }
 
-func (p Parser) Parse(r io.Reader, out chan<- []localroast.Schema) error {
+func (p Parser) Parse(in <-chan io.Reader, out chan<- []localroast.Schema) error {
 	var stubs []stub
-	if err := json.NewDecoder(r).Decode(&stubs); err != nil {
+	if err := json.NewDecoder(<-in).Decode(&stubs); err != nil {
 		return err
 	}
 

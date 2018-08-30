@@ -7,6 +7,7 @@ import (
 
 	"github.com/caalberts/localroast"
 	"github.com/stretchr/testify/assert"
+	"io"
 )
 
 var validJSON = `
@@ -31,14 +32,16 @@ var validJSON = `
 ]`
 
 func TestParse(t *testing.T) {
-	p := Parser{}
+	input := make(chan io.Reader)
 	output := make(chan []localroast.Schema)
 
 	go func() {
-		err := p.Parse(strings.NewReader(validJSON), output)
+		p := Parser{}
+		err := p.Parse(input, output)
 		assert.Nil(t, err)
 	}()
 
+	input <- strings.NewReader(validJSON)
 	schemas := <-output
 
 	assert.Equal(t, 2, len(schemas))
@@ -67,10 +70,14 @@ var missingKeys = `
 `
 
 func TestParseSchemaWithMissingKeys(t *testing.T) {
-	p := Parser{}
-	err := p.Parse(strings.NewReader(missingKeys), make(chan []localroast.Schema))
-	assert.NotNil(t, err)
-	assert.Equal(t, "Missing required fields: method, path, status", err.Error())
+	input := make(chan io.Reader)
+	go func() {
+		p := Parser{}
+		err := p.Parse(input, make(chan []localroast.Schema))
+		assert.NotNil(t, err)
+		assert.Equal(t, "missing required fields: method, path, status", err.Error())
+	}()
+	input <- strings.NewReader(missingKeys)
 }
 
 var invalidJSON = `
@@ -87,9 +94,13 @@ var invalidJSON = `
 `
 
 func TestParseSchemaFromInvalidJSON(t *testing.T) {
-	p := Parser{}
-	err := p.Parse(strings.NewReader(invalidJSON), make(chan []localroast.Schema))
-	assert.NotNil(t, err)
+	input := make(chan io.Reader)
+	go func() {
+		p := Parser{}
+		err := p.Parse(input, make(chan []localroast.Schema))
+		assert.NotNil(t, err)
+	}()
+	input <- strings.NewReader(invalidJSON)
 }
 
 var jsonObject = `
@@ -105,7 +116,11 @@ var jsonObject = `
 `
 
 func TestParseSchemaFromJSONObject(t *testing.T) {
-	p := Parser{}
-	err := p.Parse(strings.NewReader(jsonObject), make(chan []localroast.Schema))
-	assert.NotNil(t, err)
+	input := make(chan io.Reader)
+	go func() {
+		p := Parser{}
+		err := p.Parse(input, make(chan []localroast.Schema))
+		assert.NotNil(t, err)
+	}()
+	input <- strings.NewReader(jsonObject)
 }

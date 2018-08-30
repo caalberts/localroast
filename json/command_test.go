@@ -25,8 +25,8 @@ type mockParser struct {
 	mock.Mock
 }
 
-func (m *mockParser) Parse(r io.Reader, schemas chan<- []localroast.Schema) error {
-	args := m.Called(r, schemas)
+func (m *mockParser) Parse(reader <-chan io.Reader, schemas chan<- []localroast.Schema) error {
+	args := m.Called(reader, schemas)
 	return args.Error(0)
 }
 
