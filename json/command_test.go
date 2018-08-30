@@ -39,6 +39,11 @@ func (m *mockServer) ListenAndServe() error {
 	return args.Error(0)
 }
 
+func (m *mockServer) Watch() chan<- []localroast.Schema {
+	args := m.Called()
+	return args.Get(0).(chan []localroast.Schema)
+}
+
 const (
 	port     = "8080"
 	testFile = "fixtures/test.json"
@@ -76,8 +81,7 @@ func TestExecuteJSONCommand(t *testing.T) {
 
 	var parsedSchema []localroast.Schema
 	var serverPort string
-	sFunc := func(port string, schemas []localroast.Schema) http.Server {
-		parsedSchema = schemas
+	sFunc := func(port string) http.Server {
 		serverPort = port
 		return s
 	}
@@ -94,14 +98,20 @@ func TestExecuteJSONCommand(t *testing.T) {
 				Response: []byte("{}"),
 			},
 		}
+		updateChan := make(chan []localroast.Schema)
 		v.On("Validate", args).Return(nil)
 		p.On("Parse", mock.Anything).Return(mockSchema, nil)
 		s.On("ListenAndServe").Return(nil)
+		s.On("Watch").Return(updateChan)
+
+		go func() {
+			parsedSchema = <-updateChan
+			assert.Equal(t, mockSchema, parsedSchema)
+		}()
 
 		err := cmd.Execute(port, args)
 
 		assert.NoError(t, err)
-		assert.Equal(t, mockSchema, parsedSchema)
 		assert.Equal(t, port, serverPort)
 
 		v.AssertExpectations(t)

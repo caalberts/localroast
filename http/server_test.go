@@ -2,20 +2,19 @@ package http
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/caalberts/localroast"
-
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 )
 
 func TestNewServer(t *testing.T) {
 	port := "8888"
-	server := NewServer(port, []localroast.Schema{}).(*http.Server)
-	assert.Equal(t, ":8888", server.Addr)
+	server := NewServer(port).(*server)
+	assert.Equal(t, ":8888", server.Server.Addr)
 }
 
 func TestNewRouterHasNoImplementation(t *testing.T) {
@@ -55,7 +54,7 @@ func TestRouterWithUpdatedSchema(t *testing.T) {
 		IDs     []int  `json:"ids"`
 		Message string `json:"message"`
 	}
-	router.UpdateSchema(schemas)
+	router.updateSchema(schemas)
 
 	var expected, actual testData
 	for _, schema := range schemas {
@@ -95,7 +94,7 @@ func TestPathParam(t *testing.T) {
 	}
 
 	router := newRouter()
-	router.UpdateSchema([]localroast.Schema{schema})
+	router.updateSchema([]localroast.Schema{schema})
 
 	testPath := "/users/1"
 

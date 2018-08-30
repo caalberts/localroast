@@ -6,6 +6,7 @@ import (
 	"github.com/caalberts/localroast"
 	"github.com/caalberts/localroast/http"
 	"github.com/spf13/afero"
+	"log"
 )
 
 type validator interface {
@@ -42,6 +43,8 @@ func NewCommand() Command {
 
 // Execute runs the command and start a server.
 func (c Command) Execute(port string, args []string) error {
+	server := c.s(port)
+
 	if err := c.v.Validate(args); err != nil {
 		return err
 	}
@@ -56,7 +59,9 @@ func (c Command) Execute(port string, args []string) error {
 		return err
 	}
 
-	server := c.s(port, schemas)
+	updateChan := server.Watch()
+	updateChan <- schemas
 
+	log.Println("brewing on port " + port)
 	return server.ListenAndServe()
 }

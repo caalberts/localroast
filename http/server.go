@@ -1,34 +1,53 @@
 package http
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/caalberts/localroast"
 	"github.com/julienschmidt/httprouter"
+	"sync"
 )
 
 // Server interface.
 type Server interface {
 	ListenAndServe() error
+	Watch() chan<- []localroast.Schema
+}
+
+type server struct {
+	*http.Server
+	router *router
 }
 
 // ServerFunc is a constructor for a new server.
-type ServerFunc func(port string, schemas []localroast.Schema) Server
+type ServerFunc func(port string) Server
 
 // NewServer creates a http server running on given port with handlers based on given schema.
-func NewServer(port string, schemas []localroast.Schema) Server {
+func NewServer(port string) Server {
 	router := newRouter()
-	router.UpdateSchema(schemas)
 
-	log.Println("brewing on port " + port)
-	return &http.Server{
-		Addr:    ":" + port,
-		Handler: router,
+	return &server{
+		Server: &http.Server{
+			Addr:    ":" + port,
+			Handler: router,
+		},
+		router: router,
 	}
 }
 
+func (s *server) Watch() chan<- []localroast.Schema {
+	updateChan := make(chan []localroast.Schema)
+	go func() {
+		for {
+			schemas := <-updateChan
+			s.router.updateSchema(schemas)
+		}
+	}()
+	return updateChan
+}
+
 type router struct {
+	sync.Mutex
 	http.Handler
 }
 
@@ -42,10 +61,14 @@ func newRouter() *router {
 }
 
 func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	rtr.Lock()
+	defer rtr.Unlock()
 	rtr.Handler.ServeHTTP(w, r)
 }
 
-func (rtr *router) UpdateSchema(schemas []localroast.Schema) {
+func (rtr *router) updateSchema(schemas []localroast.Schema) {
+	rtr.Lock()
+	defer rtr.Unlock()
 	router := httprouter.New()
 	for _, schema := range schemas {
 		router.Handle(schema.Method, schema.Path, handlerFunc(schema))
