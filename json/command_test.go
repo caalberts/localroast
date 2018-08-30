@@ -25,9 +25,9 @@ type mockParser struct {
 	mock.Mock
 }
 
-func (m *mockParser) Parse(r io.Reader) ([]localroast.Schema, error) {
-	args := m.Called(r)
-	return args.Get(0).([]localroast.Schema), args.Error(1)
+func (m *mockParser) Parse(r io.Reader, schemas chan<- []localroast.Schema) error {
+	args := m.Called(r, schemas)
+	return args.Error(0)
 }
 
 type mockServer struct {
@@ -100,7 +100,7 @@ func TestExecuteJSONCommand(t *testing.T) {
 		}
 		updateChan := make(chan []localroast.Schema)
 		v.On("Validate", args).Return(nil)
-		p.On("Parse", mock.Anything).Return(mockSchema, nil)
+		p.On("Parse", mock.Anything, mock.Anything).Return(nil)
 		s.On("ListenAndServe").Return(nil)
 		s.On("Watch").Return(updateChan)
 
@@ -123,13 +123,13 @@ func TestExecuteJSONCommand(t *testing.T) {
 
 	t.Run("read error", func(t *testing.T) {
 		args := []string{"fakefile"}
-		errorMsg := "Failed to read file"
+		errorMsg := "failed to read file"
 		v.On("Validate", args).Return(errors.New(errorMsg))
 
 		err := cmd.Execute(port, args)
 
 		assert.Error(t, err)
-		assert.Equal(t, "Failed to read file", err.Error())
+		assert.Equal(t, "failed to read file", err.Error())
 
 		v.AssertExpectations(t)
 		p.AssertNotCalled(t, "Parse")
@@ -140,9 +140,11 @@ func TestExecuteJSONCommand(t *testing.T) {
 
 	t.Run("parsing error", func(t *testing.T) {
 		args := []string{testFile}
-		errorMsg := "Failed to parse schema"
 		v.On("Validate", args).Return(nil)
-		p.On("Parse", mock.Anything).Return([]localroast.Schema{}, errors.New(errorMsg))
+		updateChan := make(chan []localroast.Schema)
+		s.On("Watch").Return(updateChan)
+		errorMsg := "failed to parse schema"
+		p.On("Parse", mock.Anything, mock.Anything).Return(errors.New(errorMsg))
 
 		err := cmd.Execute(port, args)
 

@@ -18,16 +18,16 @@ type stub struct {
 	Response json.RawMessage `json:"response"`
 }
 
-func (p Parser) Parse(r io.Reader) ([]localroast.Schema, error) {
+func (p Parser) Parse(r io.Reader, out chan<- []localroast.Schema) error {
 	var stubs []stub
 	if err := json.NewDecoder(r).Decode(&stubs); err != nil {
-		return []localroast.Schema{}, err
+		return err
 	}
 
 	schemas := make([]localroast.Schema, len(stubs))
 	for i, stub := range stubs {
 		if f := missingFields(stub); len(f) > 0 {
-			return []localroast.Schema{}, fmt.Errorf("Missing required fields: %s", strings.Join(f, ", "))
+			return fmt.Errorf("missing required fields: %s", strings.Join(f, ", "))
 		}
 		schemas[i] = localroast.Schema{
 			Method:   *stub.Method,
@@ -37,7 +37,8 @@ func (p Parser) Parse(r io.Reader) ([]localroast.Schema, error) {
 		}
 	}
 
-	return schemas, nil
+	out <- schemas
+	return nil
 }
 
 func missingFields(s stub) []string {

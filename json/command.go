@@ -14,7 +14,7 @@ type validator interface {
 }
 
 type parser interface {
-	Parse(io.Reader) ([]localroast.Schema, error)
+	Parse(io.Reader, chan<- []localroast.Schema) error
 }
 
 // Command struct contains a file reader to read input file,
@@ -43,24 +43,21 @@ func NewCommand() Command {
 
 // Execute runs the command and start a server.
 func (c Command) Execute(port string, args []string) error {
-	server := c.s(port)
-
 	if err := c.v.Validate(args); err != nil {
 		return err
 	}
 
-	file, err := c.fs.Open(args[0])
+	filepath := args[0]
+	file, err := c.fs.Open(filepath)
 	if err != nil {
 		return err
 	}
 
-	schemas, err := c.p.Parse(file)
+	server := c.s(port)
+	err = c.p.Parse(file, server.Watch())
 	if err != nil {
 		return err
 	}
-
-	updateChan := server.Watch()
-	updateChan <- schemas
 
 	log.Println("brewing on port " + port)
 	return server.ListenAndServe()

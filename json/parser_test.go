@@ -5,15 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/caalberts/localroast"
 	"github.com/stretchr/testify/assert"
 )
-
-type testData struct {
-	Success bool   `json:"success"`
-	ID      int    `json:"id"`
-	IDs     []int  `json:"ids"`
-	Message string `json:"message"`
-}
 
 var validJSON = `
 [
@@ -38,9 +32,15 @@ var validJSON = `
 
 func TestParse(t *testing.T) {
 	p := Parser{}
-	schemas, err := p.Parse(strings.NewReader(validJSON))
+	output := make(chan []localroast.Schema)
 
-	assert.Nil(t, err)
+	go func() {
+		err := p.Parse(strings.NewReader(validJSON), output)
+		assert.Nil(t, err)
+	}()
+
+	schemas := <-output
+
 	assert.Equal(t, 2, len(schemas))
 
 	assert.Equal(t, http.MethodGet, schemas[0].Method)
@@ -68,7 +68,7 @@ var missingKeys = `
 
 func TestParseSchemaWithMissingKeys(t *testing.T) {
 	p := Parser{}
-	_, err := p.Parse(strings.NewReader(missingKeys))
+	err := p.Parse(strings.NewReader(missingKeys), make(chan []localroast.Schema))
 	assert.NotNil(t, err)
 	assert.Equal(t, "Missing required fields: method, path, status", err.Error())
 }
@@ -88,7 +88,7 @@ var invalidJSON = `
 
 func TestParseSchemaFromInvalidJSON(t *testing.T) {
 	p := Parser{}
-	_, err := p.Parse(strings.NewReader(invalidJSON))
+	err := p.Parse(strings.NewReader(invalidJSON), make(chan []localroast.Schema))
 	assert.NotNil(t, err)
 }
 
@@ -106,6 +106,6 @@ var jsonObject = `
 
 func TestParseSchemaFromJSONObject(t *testing.T) {
 	p := Parser{}
-	_, err := p.Parse(strings.NewReader(jsonObject))
+	err := p.Parse(strings.NewReader(jsonObject), make(chan []localroast.Schema))
 	assert.NotNil(t, err)
 }
