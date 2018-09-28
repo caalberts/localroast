@@ -4,14 +4,20 @@ import (
 	"errors"
 	"github.com/fsnotify/fsnotify"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"os"
 	"testing"
 )
 
-const watchedFile = "watchthis.txt"
+const (
+	watchedFile = "watchthis.txt"
+	fileContent = "hello world"
+)
 
 func TestMain(m *testing.M) {
-	os.Create(watchedFile)
+	file, _ := os.Create(watchedFile)
+	file.Write([]byte(fileContent))
+	file.Close()
 
 	testResult := m.Run()
 
@@ -19,57 +25,55 @@ func TestMain(m *testing.M) {
 	os.Exit(testResult)
 }
 
-func TestFileHandler_Add(t *testing.T) {
-	eventChan := make(chan string)
-	errorChan := make(chan error)
-
-	fileHandler, err := NewFileHandler(eventChan, errorChan)
+func TestFileHandler_Open(t *testing.T) {
+	fileHandler, err := NewFileHandler()
 	assert.NoError(t, err)
 
-	err = fileHandler.Add(watchedFile)
+	err = fileHandler.Open(watchedFile)
 	assert.NoError(t, err)
 
 	assert.Equal(t, watchedFile, fileHandler.file)
+
+	result, err := ioutil.ReadAll(<-fileHandler.Output())
+	assert.NoError(t, err)
+	assert.Equal(t, []byte(fileContent), result)
 }
 
-func TestFileHandler_Run(t *testing.T) {
-	eventChan := make(chan string)
-	errorChan := make(chan error)
-
-	fileHandler, err := NewFileHandler(eventChan, errorChan)
+func TestFileHandler_Watch(t *testing.T) {
+	fileHandler, err := NewFileHandler()
 	assert.NoError(t, err)
 
-	err = fileHandler.Add(watchedFile)
+	fileHandler.file = watchedFile
+	err = fileHandler.Watch()
 	assert.NoError(t, err)
 
-	fileHandler.Run()
-
-	t.Run("sends event on WRITE", func(t *testing.T) {
+	t.Run("sends file on WRITE as io.Reader", func(t *testing.T) {
 		event := fsnotify.Event{
 			Name: watchedFile,
 			Op:   fsnotify.Write,
 		}
 		fileHandler.watcher.Events <- event
 
-		receivedFile := <-eventChan
-		assert.Equal(t, watchedFile, receivedFile)
+		result, err := ioutil.ReadAll(<-fileHandler.Output())
+		assert.NoError(t, err)
+		assert.Equal(t, []byte(fileContent), result)
 	})
 
-	t.Run("sends event on CREATE", func(t *testing.T) {
+	t.Run("sends file on CREATE as io.Reader", func(t *testing.T) {
 		event := fsnotify.Event{
 			Name: watchedFile,
 			Op:   fsnotify.Create,
 		}
 		fileHandler.watcher.Events <- event
 
-		receivedFile := <-eventChan
-		assert.Equal(t, watchedFile, receivedFile)
+		result, err := ioutil.ReadAll(<-fileHandler.Output())
+		assert.NoError(t, err)
+		assert.Equal(t, []byte(fileContent), result)
 	})
 
-	t.Run("sends error", func(t *testing.T) {
+	t.Run("does not block when filewatch errors", func(t *testing.T) {
 		fileHandler.watcher.Errors <- errors.New("something happened")
 
-		receivedError := <-errorChan
-		assert.Error(t, receivedError, "something happened")
+		assert.Empty(t, fileHandler.Output())
 	})
 }
