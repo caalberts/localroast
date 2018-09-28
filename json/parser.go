@@ -7,27 +7,49 @@ import (
 	"strings"
 
 	"github.com/caalberts/localroast"
+	log "github.com/sirupsen/logrus"
 )
 
-type Parser struct{}
-
-type stub struct {
-	Method   *string         `json:"method"`
-	Path     *string         `json:"path"`
-	Status   *int            `json:"status"`
-	Response json.RawMessage `json:"response"`
+type Parser struct {
+	output chan []localroast.Schema
 }
 
-func (p Parser) Parse(in <-chan io.Reader, out chan<- []localroast.Schema) error {
-	var stubs []stub
-	if err := json.NewDecoder(<-in).Decode(&stubs); err != nil {
-		return err
+func NewParser() *Parser {
+	return &Parser{
+		output: make(chan []localroast.Schema),
 	}
+}
 
+func (p *Parser) Output() chan []localroast.Schema {
+	return p.output
+}
+
+func (p *Parser) Watch(input chan io.Reader) {
+	go func() {
+		for input := range input {
+			var stubs []stub
+			err := json.NewDecoder(input).Decode(&stubs)
+			if err != nil {
+				log.Error(err)
+			} else {
+				schemas, err := createSchema(stubs)
+				if err != nil {
+					log.Error(err)
+				} else {
+					p.output <- schemas
+				}
+			}
+		}
+	}()
+}
+
+func createSchema(stubs []stub) ([]localroast.Schema, error) {
 	schemas := make([]localroast.Schema, len(stubs))
+
 	for i, stub := range stubs {
 		if f := missingFields(stub); len(f) > 0 {
-			return fmt.Errorf("missing required fields: %s", strings.Join(f, ", "))
+			err := fmt.Errorf("missing required fields: %s", strings.Join(f, ", "))
+			return []localroast.Schema{}, err
 		}
 		schemas[i] = localroast.Schema{
 			Method:   *stub.Method,
@@ -37,8 +59,14 @@ func (p Parser) Parse(in <-chan io.Reader, out chan<- []localroast.Schema) error
 		}
 	}
 
-	out <- schemas
-	return nil
+	return schemas, nil
+}
+
+type stub struct {
+	Method   *string         `json:"method"`
+	Path     *string         `json:"path"`
+	Status   *int            `json:"status"`
+	Response json.RawMessage `json:"response"`
 }
 
 func missingFields(s stub) []string {

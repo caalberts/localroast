@@ -7,7 +7,6 @@ import (
 
 	"github.com/caalberts/localroast"
 	"github.com/caalberts/localroast/http"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -21,13 +20,36 @@ func (m *mockValidator) Validate(strs []string) error {
 	return args.Error(0)
 }
 
+type mockFileHandler struct {
+	mock.Mock
+}
+
+func (m *mockFileHandler) Output() chan io.Reader {
+	args := m.Called()
+	return args.Get(0).(chan io.Reader)
+}
+
+func (m *mockFileHandler) Open(fileName string) error {
+	args := m.Called(fileName)
+	return args.Error(0)
+}
+
+func (m *mockFileHandler) Watch() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 type mockParser struct {
 	mock.Mock
 }
 
-func (m *mockParser) Parse(reader <-chan io.Reader, schemas chan<- []localroast.Schema) error {
-	args := m.Called(reader, schemas)
-	return args.Error(0)
+func (m *mockParser) Output() chan []localroast.Schema {
+	args := m.Called()
+	return args.Get(0).(chan []localroast.Schema)
+}
+
+func (m *mockParser) Watch(reader chan io.Reader) {
+	m.Called(reader)
 }
 
 type mockServer struct {
@@ -39,9 +61,8 @@ func (m *mockServer) ListenAndServe() error {
 	return args.Error(0)
 }
 
-func (m *mockServer) Watch() chan<- []localroast.Schema {
-	args := m.Called()
-	return args.Get(0).(chan []localroast.Schema)
+func (m *mockServer) Watch(schemas chan []localroast.Schema) {
+	m.Called(schemas)
 }
 
 const (
@@ -49,112 +70,112 @@ const (
 	testFile = "fixtures/test.json"
 )
 
-func setup(fileContent string) afero.Fs {
-	appFS := afero.NewMemMapFs()
-
-	appFS.MkdirAll("fixtures", 0755)
-	afero.WriteFile(appFS, testFile, []byte(fileContent), 0644)
-
-	return appFS
-}
-
-func resetMocks(v *mockValidator, p *mockParser, s *mockServer) {
+func resetMocks(v *mockValidator, f *mockFileHandler, p *mockParser, s *mockServer) {
 	v.Mock = mock.Mock{}
+	f.Mock = mock.Mock{}
 	p.Mock = mock.Mock{}
 	s.Mock = mock.Mock{}
 }
 
 func TestExecuteJSONCommand(t *testing.T) {
-	validJSON := `
-	[
-		{
-			"method": "GET",
-			"path": "/",
-			"status": 200,
-			"response": {}
-		}
-	]`
-	fs := setup(validJSON)
-	v := new(mockValidator)
-	p := new(mockParser)
-	s := new(mockServer)
+	mockValidator := new(mockValidator)
+	mockFileHandler := new(mockFileHandler)
+	mockParser := new(mockParser)
+	mockServer := new(mockServer)
 
-	var parsedSchema []localroast.Schema
 	var serverPort string
 	sFunc := func(port string) http.Server {
 		serverPort = port
-		return s
+		return mockServer
 	}
 
-	cmd := Command{v, p, sFunc, fs}
+	cmd := Command{mockValidator, mockFileHandler, mockParser, sFunc}
 
 	t.Run("successful command", func(t *testing.T) {
 		args := []string{testFile}
-		mockSchema := []localroast.Schema{
-			{
-				Method:   "GET",
-				Path:     "/",
-				Status:   200,
-				Response: []byte("{}"),
-			},
-		}
-		updateChan := make(chan []localroast.Schema)
-		v.On("Validate", args).Return(nil)
-		p.On("Parse", mock.Anything, mock.Anything).Return(nil)
-		s.On("ListenAndServe").Return(nil)
-		s.On("Watch").Return(updateChan)
 
-		go func() {
-			parsedSchema = <-updateChan
-			assert.Equal(t, mockSchema, parsedSchema)
-		}()
+		readerChan := make(chan io.Reader)
+		schemaChan := make(chan []localroast.Schema)
+
+		mockValidator.On("Validate", args).Return(nil)
+		mockFileHandler.On("Open", testFile).Return(nil)
+		mockFileHandler.On("Watch").Return(nil)
+		mockFileHandler.On("Output").Return(readerChan)
+		mockParser.On("Watch", readerChan)
+		mockParser.On("Output").Return(schemaChan)
+		mockServer.On("ListenAndServe").Return(nil)
+		mockServer.On("Watch", schemaChan)
 
 		err := cmd.Execute(port, args)
 
 		assert.NoError(t, err)
 		assert.Equal(t, port, serverPort)
 
-		v.AssertExpectations(t)
-		p.AssertExpectations(t)
-		s.AssertExpectations(t)
+		mockValidator.AssertExpectations(t)
+		mockFileHandler.AssertExpectations(t)
+		mockParser.AssertExpectations(t)
+		mockServer.AssertExpectations(t)
 
-		resetMocks(v, p, s)
+		resetMocks(mockValidator, mockFileHandler, mockParser, mockServer)
 	})
 
-	t.Run("read error", func(t *testing.T) {
+	t.Run("invalid argument", func(t *testing.T) {
 		args := []string{"fakefile"}
-		errorMsg := "failed to read file"
-		v.On("Validate", args).Return(errors.New(errorMsg))
-
-		err := cmd.Execute(port, args)
-
-		assert.Error(t, err)
-		assert.Equal(t, "failed to read file", err.Error())
-
-		v.AssertExpectations(t)
-		p.AssertNotCalled(t, "Parse")
-		s.AssertNotCalled(t, "ListenAndServe")
-
-		resetMocks(v, p, s)
-	})
-
-	t.Run("parsing error", func(t *testing.T) {
-		args := []string{testFile}
-		v.On("Validate", args).Return(nil)
-		updateChan := make(chan []localroast.Schema)
-		s.On("Watch").Return(updateChan)
-		errorMsg := "failed to parse schema"
-		p.On("Parse", mock.Anything, mock.Anything).Return(errors.New(errorMsg))
+		errorMsg := "invalid argument"
+		mockValidator.On("Validate", args).Return(errors.New(errorMsg))
 
 		err := cmd.Execute(port, args)
 
 		assert.Error(t, err)
 		assert.Equal(t, errorMsg, err.Error())
 
-		v.AssertExpectations(t)
-		p.AssertExpectations(t)
-		s.AssertNotCalled(t, "ListenAndServe")
+		mockValidator.AssertExpectations(t)
+		mockFileHandler.AssertExpectations(t)
+		mockParser.AssertExpectations(t)
+		mockServer.AssertExpectations(t)
 
-		resetMocks(v, p, s)
+		resetMocks(mockValidator, mockFileHandler, mockParser, mockServer)
+	})
+
+	t.Run("failed to open file", func(t *testing.T) {
+		fileName := "missingfile"
+		args := []string{fileName}
+		errorMsg := "failed to open file"
+
+		mockValidator.On("Validate", args).Return(nil)
+		mockFileHandler.On("Open", fileName).Return(errors.New(errorMsg))
+
+		err := cmd.Execute(port, args)
+
+		assert.Error(t, err)
+		assert.Equal(t, errorMsg, err.Error())
+
+		mockValidator.AssertExpectations(t)
+		mockFileHandler.AssertExpectations(t)
+		mockParser.AssertExpectations(t)
+		mockServer.AssertExpectations(t)
+
+		resetMocks(mockValidator, mockFileHandler, mockParser, mockServer)
+	})
+
+	t.Run("failed to watch file", func(t *testing.T) {
+		args := []string{testFile}
+		errorMsg := "failed to watch file"
+
+		mockValidator.On("Validate", args).Return(nil)
+		mockFileHandler.On("Open", testFile).Return(nil)
+		mockFileHandler.On("Watch").Return(errors.New(errorMsg))
+
+		err := cmd.Execute(port, args)
+
+		assert.Error(t, err)
+		assert.Equal(t, errorMsg, err.Error())
+
+		mockValidator.AssertExpectations(t)
+		mockFileHandler.AssertExpectations(t)
+		mockParser.AssertExpectations(t)
+		mockServer.AssertExpectations(t)
+
+		resetMocks(mockValidator, mockFileHandler, mockParser, mockServer)
 	})
 }

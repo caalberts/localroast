@@ -61,9 +61,9 @@ func (f *FileHandler) Watch() error {
 					file, err := os.Open(event.Name)
 					if err != nil {
 						log.Errorf("error opening file: %s", err)
+					} else {
+						f.send(file)
 					}
-
-					f.send(file)
 				}
 			case err := <-f.watcher.Errors:
 				log.Errorf("error watching file: %s", err)

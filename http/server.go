@@ -11,7 +11,7 @@ import (
 // Server interface.
 type Server interface {
 	ListenAndServe() error
-	Watch() chan<- []localroast.Schema
+	Watch(chan []localroast.Schema)
 }
 
 type server struct {
@@ -35,15 +35,13 @@ func NewServer(port string) Server {
 	}
 }
 
-func (s *server) Watch() chan<- []localroast.Schema {
-	updateChan := make(chan []localroast.Schema)
+func (s *server) Watch(incomingSchemas chan []localroast.Schema) {
 	go func() {
 		for {
-			schemas := <-updateChan
+			schemas := <-incomingSchemas
 			s.router.updateSchema(schemas)
 		}
 	}()
-	return updateChan
 }
 
 type router struct {

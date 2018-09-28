@@ -4,8 +4,8 @@ import (
 	"io"
 
 	"github.com/caalberts/localroast"
+	"github.com/caalberts/localroast/filesystem"
 	"github.com/caalberts/localroast/http"
-	"github.com/spf13/afero"
 	"log"
 )
 
@@ -13,57 +13,65 @@ type validator interface {
 	Validate([]string) error
 }
 
+type fileHandler interface {
+	Output() chan io.Reader
+	Open(fileName string) error
+	Watch() error
+}
+
 type parser interface {
-	Parse(<-chan io.Reader, chan<- []localroast.Schema) error
+	Output() chan []localroast.Schema
+	Watch(chan io.Reader)
 }
 
 // Command struct contains a file reader to read input file,
 // a parser to parse input into schema,
 // and a server constructor.
 type Command struct {
-	v  validator
-	p  parser
-	s  http.ServerFunc
-	fs fileSystem
-}
-
-type fileSystem interface {
-	Open(string) (afero.File, error)
+	validator   validator
+	fileHandler fileHandler
+	parser      parser
+	serverFunc  http.ServerFunc
 }
 
 // NewCommand creates a command with a JSON file reader and parser.
-func NewCommand() Command {
-	return Command{
-		v:  Validator{},
-		p:  Parser{},
-		s:  http.NewServer,
-		fs: afero.NewOsFs(),
+func NewCommand() (*Command, error) {
+	fileHandler, err := filesystem.NewFileHandler()
+	if err != nil {
+		return nil, err
 	}
+
+	cmd := Command{
+		validator:   Validator{},
+		fileHandler: fileHandler,
+		parser:      NewParser(),
+		serverFunc:  http.NewServer,
+	}
+	return &cmd, nil
 }
 
 // Execute runs the command and start a server.
 func (c Command) Execute(port string, args []string) error {
-	if err := c.v.Validate(args); err != nil {
+	err := c.validator.Validate(args)
+	if err != nil {
 		return err
 	}
 
-	input := make(chan io.Reader)
 	filepath := args[0]
-	file, err := c.fs.Open(filepath)
+	err = c.fileHandler.Open(filepath)
 	if err != nil {
 		return err
 	}
 
-	go func() {
-		input <- file
-	}()
-
-	server := c.s(port)
-
-	err = c.p.Parse(input, server.Watch())
+	err = c.fileHandler.Watch()
 	if err != nil {
 		return err
 	}
+
+	server := c.serverFunc(port)
+
+	c.parser.Watch(c.fileHandler.Output())
+	server.Watch(c.parser.Output())
 
 	log.Println("brewing on port " + port)
 	return server.ListenAndServe()

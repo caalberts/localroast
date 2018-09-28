@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/caalberts/localroast/json"
 )
@@ -19,7 +19,12 @@ func main() {
 	flag.Parse()
 	args := flag.Args()
 
-	err := json.NewCommand().Execute(*port, args)
+	cmd, err := json.NewCommand()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = cmd.Execute(*port, args)
 	if err != nil {
 		log.Fatal(err)
 	}
