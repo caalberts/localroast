@@ -8,28 +8,48 @@ import (
 	"testing"
 )
 
-func TestFsnotifyWatcher_Run(t *testing.T) {
-	watchedFile := "watchthis.txt"
-	_, err := os.Create(watchedFile)
-	assert.NoError(t, err)
+const watchedFile = "watchthis.txt"
 
+func TestMain(m *testing.M) {
+	os.Create(watchedFile)
+
+	testResult := m.Run()
+
+	os.Remove(watchedFile)
+	os.Exit(testResult)
+}
+
+func TestFileHandler_Add(t *testing.T) {
 	eventChan := make(chan string)
 	errorChan := make(chan error)
 
-	watcher, err := NewWatcher(eventChan, errorChan)
+	fileHandler, err := NewFileHandler(eventChan, errorChan)
 	assert.NoError(t, err)
 
-	err = watcher.Add(watchedFile)
+	err = fileHandler.Add(watchedFile)
 	assert.NoError(t, err)
 
-	watcher.Run()
+	assert.Equal(t, watchedFile, fileHandler.file)
+}
+
+func TestFileHandler_Run(t *testing.T) {
+	eventChan := make(chan string)
+	errorChan := make(chan error)
+
+	fileHandler, err := NewFileHandler(eventChan, errorChan)
+	assert.NoError(t, err)
+
+	err = fileHandler.Add(watchedFile)
+	assert.NoError(t, err)
+
+	fileHandler.Run()
 
 	t.Run("sends event on WRITE", func(t *testing.T) {
 		event := fsnotify.Event{
 			Name: watchedFile,
 			Op:   fsnotify.Write,
 		}
-		watcher.(*fsnotifyWatcher).watcher.Events <- event
+		fileHandler.watcher.Events <- event
 
 		receivedFile := <-eventChan
 		assert.Equal(t, watchedFile, receivedFile)
@@ -40,19 +60,16 @@ func TestFsnotifyWatcher_Run(t *testing.T) {
 			Name: watchedFile,
 			Op:   fsnotify.Create,
 		}
-		watcher.(*fsnotifyWatcher).watcher.Events <- event
+		fileHandler.watcher.Events <- event
 
 		receivedFile := <-eventChan
 		assert.Equal(t, watchedFile, receivedFile)
 	})
 
 	t.Run("sends error", func(t *testing.T) {
-		watcher.(*fsnotifyWatcher).watcher.Errors <- errors.New("something happened")
+		fileHandler.watcher.Errors <- errors.New("something happened")
 
 		receivedError := <-errorChan
 		assert.Error(t, receivedError, "something happened")
 	})
-
-	err = os.Remove(watchedFile)
-	assert.NoError(t, err)
 }
