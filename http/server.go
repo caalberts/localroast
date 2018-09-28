@@ -6,6 +6,8 @@ import (
 	"github.com/caalberts/localroast"
 	"github.com/julienschmidt/httprouter"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Server interface.
@@ -39,6 +41,7 @@ func (s *server) Watch(incomingSchemas chan []localroast.Schema) {
 	go func() {
 		for {
 			schemas := <-incomingSchemas
+			log.Info("updating router with new schema")
 			s.router.updateSchema(schemas)
 		}
 	}()

@@ -6,7 +6,7 @@ import (
 	"github.com/caalberts/localroast"
 	"github.com/caalberts/localroast/filesystem"
 	"github.com/caalberts/localroast/http"
-	"log"
+	log "github.com/sirupsen/logrus"
 )
 
 type validator interface {
@@ -73,6 +73,6 @@ func (c Command) Execute(port string, args []string) error {
 	c.parser.Watch(c.fileHandler.Output())
 	server.Watch(c.parser.Output())
 
-	log.Println("brewing on port " + port)
+	log.Info("brewing on port " + port)
 	return server.ListenAndServe()
 }

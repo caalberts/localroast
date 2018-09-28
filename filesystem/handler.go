@@ -56,9 +56,9 @@ func (f *FileHandler) Watch() error {
 		for {
 			select {
 			case event := <-f.watcher.Events:
-				log.Printf("received fsnotify event: %s", event)
+				log.Debugf("received fsnotify event: %s", event)
 				if f.writeOrCreate(event) && f.isWatched(event.Name) {
-					log.Printf("opening file: %s", event.Name)
+					log.Printf("file changed: %s", event.Name)
 					file, err := os.Open(event.Name)
 					if err != nil {
 						log.Errorf("error opening file: %s", err)
@@ -76,7 +76,7 @@ func (f *FileHandler) Watch() error {
 }
 
 func (f *FileHandler) send(file io.Reader) {
-	log.Println("sending file content")
+	log.Info("sending new file content")
 	f.output <- file
 }
 

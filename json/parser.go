@@ -36,6 +36,7 @@ func (p *Parser) Watch(input chan io.Reader) {
 				if err != nil {
 					log.Error(err)
 				} else {
+					log.Info("parsed new schema")
 					p.output <- schemas
 				}
 			}
