@@ -46,7 +46,8 @@ func (f *FileHandler) Open(fileName string) error {
 }
 
 func (f *FileHandler) Watch() error {
-	err := f.watcher.Add(f.file)
+	dir := filepath.Dir(f.file)
+	err := f.watcher.Add(dir)
 	if err != nil {
 		return err
 	}
@@ -83,7 +84,6 @@ func (f *FileHandler) writeOrCreate(event fsnotify.Event) bool {
 	return (event.Op&fsnotify.Write == fsnotify.Write) || (event.Op&fsnotify.Create == fsnotify.Create)
 }
 
-func (f *FileHandler) isWatched(filePath string) bool {
-	_, file := filepath.Split(filePath)
+func (f *FileHandler) isWatched(file string) bool {
 	return file == f.file
 }
