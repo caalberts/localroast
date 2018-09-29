@@ -8,7 +8,7 @@
 
 ## Overview
 
-Localroast is a lightweight Go command line tool to run a local stub http service. The endpoints and the stubbed responses are defined in a JSON file.
+Localroast quickly stubs a HTTP server. The stubbed endpoints and responses are defined in a JSON file.
 
 ## Installation
 

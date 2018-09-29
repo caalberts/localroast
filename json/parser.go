@@ -6,22 +6,22 @@ import (
 	"io"
 	"strings"
 
-	"github.com/caalberts/localroast"
+	"github.com/caalberts/localroast/types"
 	log "github.com/sirupsen/logrus"
 	"regexp"
 )
 
 type Parser struct {
-	output chan []localroast.Schema
+	output chan []types.Schema
 }
 
 func NewParser() *Parser {
 	return &Parser{
-		output: make(chan []localroast.Schema),
+		output: make(chan []types.Schema),
 	}
 }
 
-func (p *Parser) Output() chan []localroast.Schema {
+func (p *Parser) Output() chan []types.Schema {
 	return p.output
 }
 
@@ -45,15 +45,15 @@ func (p *Parser) Watch(input chan io.Reader) {
 	}()
 }
 
-func createSchema(stubs []stub) ([]localroast.Schema, error) {
-	schemas := make([]localroast.Schema, len(stubs))
+func createSchema(stubs []stub) ([]types.Schema, error) {
+	schemas := make([]types.Schema, len(stubs))
 
 	for i, stub := range stubs {
 		if f := missingFields(stub); len(f) > 0 {
 			err := fmt.Errorf("missing required fields: %s", strings.Join(f, ", "))
-			return []localroast.Schema{}, err
+			return []types.Schema{}, err
 		}
-		schemas[i] = localroast.Schema{
+		schemas[i] = types.Schema{
 			Method:   *stub.Method,
 			Path:     *stub.Path,
 			Status:   *stub.Status,

@@ -34,7 +34,6 @@ func (f *FileHandler) Output() chan io.Reader {
 
 func (f *FileHandler) Open(fileName string) error {
 	f.file = fileName
-	log.Printf("opening file: %s", fileName)
 	file, err := os.Open(f.file)
 	if err != nil {
 		return err
@@ -76,7 +75,6 @@ func (f *FileHandler) Watch() error {
 }
 
 func (f *FileHandler) send(file io.Reader) {
-	log.Info("sending new file content")
 	f.output <- file
 }
 

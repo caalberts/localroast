@@ -1,4 +1,4 @@
-package localroast
+package types
 
 // Schema is a representation of a stubbed endpoint.
 type Schema struct {

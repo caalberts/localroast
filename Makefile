@@ -3,7 +3,7 @@ all: build-deps build fmt vet lint test
 
 ALL_PACKAGES=$(shell go list ./... | grep -v "vendor")
 
-APP_MAIN="./cmd/localroast"
+APP_MAIN="./"
 APP_EXECUTABLE="localroast"
 
 setup:

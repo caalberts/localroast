@@ -3,17 +3,17 @@ package http
 import (
 	"net/http"
 
-	"github.com/caalberts/localroast"
 	"github.com/julienschmidt/httprouter"
 	"sync"
 
+	"github.com/caalberts/localroast/types"
 	log "github.com/sirupsen/logrus"
 )
 
 // Server interface.
 type Server interface {
 	ListenAndServe() error
-	Watch(chan []localroast.Schema)
+	Watch(chan []types.Schema)
 }
 
 type server struct {
@@ -37,7 +37,7 @@ func NewServer(port string) Server {
 	}
 }
 
-func (s *server) Watch(incomingSchemas chan []localroast.Schema) {
+func (s *server) Watch(incomingSchemas chan []types.Schema) {
 	go func() {
 		for {
 			schemas := <-incomingSchemas
@@ -67,7 +67,7 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rtr.Handler.ServeHTTP(w, r)
 }
 
-func (rtr *router) updateSchema(schemas []localroast.Schema) {
+func (rtr *router) updateSchema(schemas []types.Schema) {
 	rtr.Lock()
 	defer rtr.Unlock()
 	router := httprouter.New()
@@ -77,7 +77,7 @@ func (rtr *router) updateSchema(schemas []localroast.Schema) {
 	rtr.Handler = router
 }
 
-func handlerFunc(schema localroast.Schema) httprouter.Handle {
+func handlerFunc(schema types.Schema) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		log.Infof("request: %s %s", r.Method, r.URL)
 		log.Infof("response status: %d, body: %s", schema.Status, schema.Response)

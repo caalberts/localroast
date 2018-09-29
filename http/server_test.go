@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/caalberts/localroast"
+	"github.com/caalberts/localroast/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,7 +27,7 @@ func TestNewRouterHasNoImplementation(t *testing.T) {
 
 func TestRouterWithUpdatedSchema(t *testing.T) {
 	router := newRouter()
-	schemas := []localroast.Schema{
+	schemas := []types.Schema{
 		{
 			Method:   "GET",
 			Path:     "/",
@@ -86,7 +86,7 @@ func TestRouterWithUpdatedSchema(t *testing.T) {
 }
 
 func TestPathParam(t *testing.T) {
-	schema := localroast.Schema{
+	schema := types.Schema{
 		Method:   "GET",
 		Path:     "/users/:id",
 		Status:   200,
@@ -94,7 +94,7 @@ func TestPathParam(t *testing.T) {
 	}
 
 	router := newRouter()
-	router.updateSchema([]localroast.Schema{schema})
+	router.updateSchema([]types.Schema{schema})
 
 	testPath := "/users/1"
 

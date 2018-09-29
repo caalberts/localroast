@@ -1,24 +1,15 @@
-package json
+package cmd
 
 import (
 	"errors"
 	"io"
 	"testing"
 
-	"github.com/caalberts/localroast"
 	"github.com/caalberts/localroast/http"
+	"github.com/caalberts/localroast/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-type mockValidator struct {
-	mock.Mock
-}
-
-func (m *mockValidator) Validate(strs []string) error {
-	args := m.Called(strs)
-	return args.Error(0)
-}
 
 type mockFileHandler struct {
 	mock.Mock
@@ -43,9 +34,9 @@ type mockParser struct {
 	mock.Mock
 }
 
-func (m *mockParser) Output() chan []localroast.Schema {
+func (m *mockParser) Output() chan []types.Schema {
 	args := m.Called()
-	return args.Get(0).(chan []localroast.Schema)
+	return args.Get(0).(chan []types.Schema)
 }
 
 func (m *mockParser) Watch(reader chan io.Reader) {
@@ -61,24 +52,22 @@ func (m *mockServer) ListenAndServe() error {
 	return args.Error(0)
 }
 
-func (m *mockServer) Watch(schemas chan []localroast.Schema) {
+func (m *mockServer) Watch(schemas chan []types.Schema) {
 	m.Called(schemas)
 }
 
 const (
-	port     = "8080"
+	testPort = "8080"
 	testFile = "fixtures/test.json"
 )
 
-func resetMocks(v *mockValidator, f *mockFileHandler, p *mockParser, s *mockServer) {
-	v.Mock = mock.Mock{}
+func resetMocks(f *mockFileHandler, p *mockParser, s *mockServer) {
 	f.Mock = mock.Mock{}
 	p.Mock = mock.Mock{}
 	s.Mock = mock.Mock{}
 }
 
 func TestExecuteJSONCommand(t *testing.T) {
-	mockValidator := new(mockValidator)
 	mockFileHandler := new(mockFileHandler)
 	mockParser := new(mockParser)
 	mockServer := new(mockServer)
@@ -89,15 +78,14 @@ func TestExecuteJSONCommand(t *testing.T) {
 		return mockServer
 	}
 
-	cmd := Command{mockValidator, mockFileHandler, mockParser, sFunc}
+	cmd := command{mockFileHandler, mockParser, sFunc}
 
 	t.Run("successful command", func(t *testing.T) {
 		args := []string{testFile}
 
 		readerChan := make(chan io.Reader)
-		schemaChan := make(chan []localroast.Schema)
+		schemaChan := make(chan []types.Schema)
 
-		mockValidator.On("Validate", args).Return(nil)
 		mockFileHandler.On("Open", testFile).Return(nil)
 		mockFileHandler.On("Watch").Return(nil)
 		mockFileHandler.On("Output").Return(readerChan)
@@ -106,35 +94,16 @@ func TestExecuteJSONCommand(t *testing.T) {
 		mockServer.On("ListenAndServe").Return(nil)
 		mockServer.On("Watch", schemaChan)
 
-		err := cmd.Execute(port, args)
+		err := cmd.execute(testPort, args)
 
 		assert.NoError(t, err)
-		assert.Equal(t, port, serverPort)
+		assert.Equal(t, testPort, serverPort)
 
-		mockValidator.AssertExpectations(t)
 		mockFileHandler.AssertExpectations(t)
 		mockParser.AssertExpectations(t)
 		mockServer.AssertExpectations(t)
 
-		resetMocks(mockValidator, mockFileHandler, mockParser, mockServer)
-	})
-
-	t.Run("invalid argument", func(t *testing.T) {
-		args := []string{"fakefile"}
-		errorMsg := "invalid argument"
-		mockValidator.On("Validate", args).Return(errors.New(errorMsg))
-
-		err := cmd.Execute(port, args)
-
-		assert.Error(t, err)
-		assert.Equal(t, errorMsg, err.Error())
-
-		mockValidator.AssertExpectations(t)
-		mockFileHandler.AssertExpectations(t)
-		mockParser.AssertExpectations(t)
-		mockServer.AssertExpectations(t)
-
-		resetMocks(mockValidator, mockFileHandler, mockParser, mockServer)
+		resetMocks(mockFileHandler, mockParser, mockServer)
 	})
 
 	t.Run("failed to open file", func(t *testing.T) {
@@ -142,40 +111,68 @@ func TestExecuteJSONCommand(t *testing.T) {
 		args := []string{fileName}
 		errorMsg := "failed to open file"
 
-		mockValidator.On("Validate", args).Return(nil)
 		mockFileHandler.On("Open", fileName).Return(errors.New(errorMsg))
 
-		err := cmd.Execute(port, args)
+		err := cmd.execute(testPort, args)
 
 		assert.Error(t, err)
 		assert.Equal(t, errorMsg, err.Error())
 
-		mockValidator.AssertExpectations(t)
 		mockFileHandler.AssertExpectations(t)
 		mockParser.AssertExpectations(t)
 		mockServer.AssertExpectations(t)
 
-		resetMocks(mockValidator, mockFileHandler, mockParser, mockServer)
+		resetMocks(mockFileHandler, mockParser, mockServer)
 	})
 
 	t.Run("failed to watch file", func(t *testing.T) {
 		args := []string{testFile}
 		errorMsg := "failed to watch file"
 
-		mockValidator.On("Validate", args).Return(nil)
 		mockFileHandler.On("Open", testFile).Return(nil)
 		mockFileHandler.On("Watch").Return(errors.New(errorMsg))
 
-		err := cmd.Execute(port, args)
+		err := cmd.execute(testPort, args)
 
 		assert.Error(t, err)
 		assert.Equal(t, errorMsg, err.Error())
 
-		mockValidator.AssertExpectations(t)
 		mockFileHandler.AssertExpectations(t)
 		mockParser.AssertExpectations(t)
 		mockServer.AssertExpectations(t)
 
-		resetMocks(mockValidator, mockFileHandler, mockParser, mockServer)
+		resetMocks(mockFileHandler, mockParser, mockServer)
+	})
+}
+
+func TestValidate(t *testing.T) {
+	var err error
+
+	t.Run("valid file", func(t *testing.T) {
+		err = validateJSON([]string{"../examples/stubs.json"})
+		assert.Nil(t, err)
+	})
+
+	t.Run("non json file", func(t *testing.T) {
+		err = validateJSON([]string{"stubs.txt"})
+		assert.NotNil(t, err)
+		assert.Equal(t, "input must be a JSON file", err.Error())
+	})
+
+	t.Run("without argument", func(t *testing.T) {
+		err = validateJSON([]string{})
+		assert.NotNil(t, err)
+		assert.Equal(t, "a file is required", err.Error())
+	})
+
+	t.Run("too many arguments", func(t *testing.T) {
+		err = validateJSON([]string{"abc.json", "def.txt"})
+		assert.NotNil(t, err)
+		assert.Equal(t, "expected 1 argument", err.Error())
+	})
+
+	t.Run("with incorrect file", func(t *testing.T) {
+		err = validateJSON([]string{"unknownfile"})
+		assert.NotNil(t, err)
 	})
 }
