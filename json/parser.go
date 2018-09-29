@@ -8,6 +8,7 @@ import (
 
 	"github.com/caalberts/localroast"
 	log "github.com/sirupsen/logrus"
+	"regexp"
 )
 
 type Parser struct {
@@ -56,7 +57,7 @@ func createSchema(stubs []stub) ([]localroast.Schema, error) {
 			Method:   *stub.Method,
 			Path:     *stub.Path,
 			Status:   *stub.Status,
-			Response: []byte(stub.Response),
+			Response: formatResponse(stub.Response),
 		}
 	}
 
@@ -68,6 +69,11 @@ type stub struct {
 	Path     *string         `json:"path"`
 	Status   *int            `json:"status"`
 	Response json.RawMessage `json:"response"`
+}
+
+func formatResponse(rawJSON json.RawMessage) []byte {
+	repeatedWhitespace := regexp.MustCompile(`[\s\p{Zs}]{2,}`)
+	return repeatedWhitespace.ReplaceAll([]byte(rawJSON), []byte(" "))
 }
 
 func missingFields(s stub) []string {

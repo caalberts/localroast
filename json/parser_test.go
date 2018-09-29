@@ -29,8 +29,8 @@ func TestParser_Watch(t *testing.T) {
 		assert.Equal(t, http.StatusOK, schemas[0].Status)
 		assert.Equal(t, http.StatusOK, schemas[1].Status)
 
-		assert.JSONEq(t, `{ "success": true }`, string(schemas[0].Response))
-		assert.JSONEq(t, `{ "success": true, "ids": [1, 2, 3] }`, string(schemas[1].Response))
+		assert.Equal(t, `{ "success": true }`, string(schemas[0].Response))
+		assert.Equal(t, `{ "success": true, "ids": [1, 2, 3] }`, string(schemas[1].Response))
 	})
 
 	t.Run("with multiple input", func(t *testing.T) {

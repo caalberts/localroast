@@ -79,6 +79,8 @@ func (rtr *router) updateSchema(schemas []localroast.Schema) {
 
 func handlerFunc(schema localroast.Schema) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		log.Infof("request: %s %s", r.Method, r.URL)
+		log.Infof("response status: %d, body: %s", schema.Status, schema.Response)
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(schema.Status)
 		w.Write(schema.Response)
