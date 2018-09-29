@@ -50,5 +50,5 @@ See [examples/stubs.json](examples/stubs.json) for more.
 
 - [x] json input
 - [x] path variable
+- [x] autoload file changes
 - [ ] yml input
-- [ ] autoload file changes
