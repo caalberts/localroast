@@ -3,6 +3,10 @@ builds:
   - main: ./main.go
     env:
       - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
 archive:
   replacements:
     darwin: Darwin
@@ -26,7 +30,7 @@ brew:
     name: homebrew-tap
   folder: Formula
   homepage: https://github.com/caalberts/localroast 
-  description: Lightweight HTTP server stubs
+  description: Localroast quickly stubs a HTTP server
   test: |
       system "#{bin}/localroast version"
 
