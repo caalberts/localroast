@@ -7,6 +7,7 @@ import (
 
 	"github.com/caalberts/localroast/http"
 	"github.com/caalberts/localroast/types"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -61,12 +62,6 @@ const (
 	testFile = "fixtures/test.json"
 )
 
-func resetMocks(f *mockFileHandler, p *mockParser, s *mockServer) {
-	f.Mock = mock.Mock{}
-	p.Mock = mock.Mock{}
-	s.Mock = mock.Mock{}
-}
-
 func TestExecuteJSONCommand(t *testing.T) {
 	mockFileHandler := new(mockFileHandler)
 	mockParser := new(mockParser)
@@ -78,7 +73,9 @@ func TestExecuteJSONCommand(t *testing.T) {
 		return mockServer
 	}
 
-	cmd := command{mockFileHandler, mockParser, sFunc}
+	testCobraCmd := &cobra.Command{}
+	testCobraCmd.Flags().String("port", testPort, "")
+	testJSONCmd := &jsonCommand{testCobraCmd, mockFileHandler, mockParser, sFunc}
 
 	t.Run("successful command", func(t *testing.T) {
 		args := []string{testFile}
@@ -94,7 +91,7 @@ func TestExecuteJSONCommand(t *testing.T) {
 		mockServer.On("ListenAndServe").Return(nil)
 		mockServer.On("Watch", schemaChan)
 
-		err := cmd.execute(testPort, args)
+		err := testJSONCmd.execute(testCobraCmd, args)
 
 		assert.NoError(t, err)
 		assert.Equal(t, testPort, serverPort)
@@ -113,7 +110,7 @@ func TestExecuteJSONCommand(t *testing.T) {
 
 		mockFileHandler.On("Open", fileName).Return(errors.New(errorMsg))
 
-		err := cmd.execute(testPort, args)
+		err := testJSONCmd.execute(testCobraCmd, args)
 
 		assert.Error(t, err)
 		assert.Equal(t, errorMsg, err.Error())
@@ -132,7 +129,7 @@ func TestExecuteJSONCommand(t *testing.T) {
 		mockFileHandler.On("Open", testFile).Return(nil)
 		mockFileHandler.On("Watch").Return(errors.New(errorMsg))
 
-		err := cmd.execute(testPort, args)
+		err := testJSONCmd.execute(testCobraCmd, args)
 
 		assert.Error(t, err)
 		assert.Equal(t, errorMsg, err.Error())
@@ -145,34 +142,38 @@ func TestExecuteJSONCommand(t *testing.T) {
 	})
 }
 
-func TestValidate(t *testing.T) {
-	var err error
+func resetMocks(f *mockFileHandler, p *mockParser, s *mockServer) {
+	f.Mock = mock.Mock{}
+	p.Mock = mock.Mock{}
+	s.Mock = mock.Mock{}
+}
 
+func TestValidateJSONArgs(t *testing.T) {
 	t.Run("valid file", func(t *testing.T) {
-		err = validateJSON([]string{"../examples/stubs.json"})
+		err := validateJSONArgs(&cobra.Command{}, []string{"../examples/stubs.json"})
 		assert.Nil(t, err)
 	})
 
 	t.Run("non json file", func(t *testing.T) {
-		err = validateJSON([]string{"stubs.txt"})
+		err := validateJSONArgs(&cobra.Command{}, []string{"stubs.txt"})
 		assert.NotNil(t, err)
 		assert.Equal(t, "input must be a JSON file", err.Error())
 	})
 
 	t.Run("without argument", func(t *testing.T) {
-		err = validateJSON([]string{})
+		err := validateJSONArgs(&cobra.Command{}, []string{})
 		assert.NotNil(t, err)
 		assert.Equal(t, "a file is required", err.Error())
 	})
 
 	t.Run("too many arguments", func(t *testing.T) {
-		err = validateJSON([]string{"abc.json", "def.txt"})
+		err := validateJSONArgs(&cobra.Command{}, []string{"abc.json", "def.txt"})
 		assert.NotNil(t, err)
 		assert.Equal(t, "expected 1 argument", err.Error())
 	})
 
 	t.Run("with incorrect file", func(t *testing.T) {
-		err = validateJSON([]string{"unknownfile"})
+		err := validateJSONArgs(&cobra.Command{}, []string{"unknownfile"})
 		assert.NotNil(t, err)
 	})
 }

@@ -10,37 +10,49 @@ import (
 
 	"errors"
 	log "github.com/sirupsen/logrus"
+	"os"
 	"strings"
 )
 
-func init() {
-	rootCmd.AddCommand(jsonCmd)
+type jsonCommand struct {
+	*cobra.Command
+
+	fileHandler fileHandler
+	parser      parser
+	serverFunc  http.ServerFunc
 }
 
-var jsonCmd = &cobra.Command{
-	Use:   "json",
-	Short: "Use localroast with json file (default)",
-	Long: `A tool to help developers stub external HTTP services quickly.
-See https://github.com/caalberts/localroast/examples/stubs.json
-for examples.`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		return validateJSON(args)
-	},
-	Example: "localroast json examples/stubs.json",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		fileHandler, err := filesystem.NewFileHandler()
-		if err != nil {
-			return err
-		}
+func (c *jsonCommand) getCommand() *cobra.Command {
+	return c.Command
+}
 
-		command := command{
-			fileHandler: fileHandler,
-			parser:      json.NewParser(),
-			serverFunc:  http.NewServer,
-		}
+func newJSONCmd() commander {
+	fileHandler, err := filesystem.NewFileHandler()
+	if err != nil {
+		log.Error(err)
+		os.Exit(1)
+	}
 
-		return command.execute(port, args)
-	},
+	jsonCmd := &jsonCommand{
+		fileHandler: fileHandler,
+		parser:      json.NewParser(),
+		serverFunc:  http.NewServer,
+	}
+
+	command := &cobra.Command{
+		Use:   "json",
+		Short: "Use localroast with json file (default)",
+		Long: `A tool to help developers stub external HTTP services quickly.
+	See https://github.com/caalberts/localroast/examples/stubs.json
+	for examples.`,
+		Args:    validateJSONArgs,
+		Example: "localroast json examples/stubs.json",
+		RunE:    jsonCmd.execute,
+	}
+
+	jsonCmd.Command = command
+
+	return jsonCmd
 }
 
 type fileHandler interface {
@@ -54,15 +66,14 @@ type parser interface {
 	Watch(chan io.Reader)
 }
 
-type command struct {
-	fileHandler fileHandler
-	parser      parser
-	serverFunc  http.ServerFunc
-}
+func (c *jsonCommand) execute(cmd *cobra.Command, args []string) error {
+	port, err := cmd.Flags().GetString("port")
+	if err != nil {
+		return err
+	}
 
-func (c command) execute(port string, args []string) error {
 	filepath := args[0]
-	err := c.fileHandler.Open(filepath)
+	err = c.fileHandler.Open(filepath)
 	if err != nil {
 		return err
 	}
@@ -81,7 +92,7 @@ func (c command) execute(port string, args []string) error {
 	return server.ListenAndServe()
 }
 
-func validateJSON(args []string) error {
+func validateJSONArgs(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return errors.New("a file is required")
 	}
