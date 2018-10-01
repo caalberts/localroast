@@ -2,3 +2,4 @@
 vendor/
 dist/
 .idea/
+coverage.txt
