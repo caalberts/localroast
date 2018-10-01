@@ -21,7 +21,7 @@ brew install caalberts/tap/localroast
 From source:
 
 ```sh
-go get -u github.com/caalberts/localroast/cmd/localroast
+go get -u github.com/caalberts/localroast
 ```
 
 ## Usage
