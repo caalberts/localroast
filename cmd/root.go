@@ -83,27 +83,18 @@ func (c *basicCommand) getCommand() *cobra.Command {
 }
 
 func newRootCmd(defaultCmder commander) commander {
+	defaultCmd := defaultCmder.getCommand()
 	cmd := &cobra.Command{
 		Use:   "localroast",
 		Short: "Localroast quickly stubs a HTTP server",
 		Long: `A tool to help developers stub external HTTP services quickly.
 See https://github.com/caalberts/localroast/examples/stubs.json
 for examples.`,
-		Args:    defaultCmder.getCommand().Args,
+		Args:    defaultCmd.Args,
 		Example: "localroast examples/stubs.json",
-		RunE:    defaultRunner(defaultCmder),
+		RunE:    defaultCmd.RunE,
 	}
 	cmd.PersistentFlags().StringVarP(&port, "port", "p", "8080", "port number")
 
 	return &basicCommand{cmd}
-}
-
-func defaultRunner(defaultCmd commander) func(*cobra.Command, []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		command := defaultCmd.getCommand()
-		if err := command.Args(cmd, args); err != nil {
-			return err
-		}
-		return command.RunE(cmd, args)
-	}
 }
