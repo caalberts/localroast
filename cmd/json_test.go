@@ -73,9 +73,9 @@ func TestExecuteJSONCommand(t *testing.T) {
 		return mockServer
 	}
 
-	testCobraCmd := &cobra.Command{}
-	testCobraCmd.Flags().String("port", testPort, "")
-	testJSONCmd := &jsonCommand{testCobraCmd, mockFileHandler, mockParser, sFunc}
+	jsonCmd := newJSONCmd(mockFileHandler, mockParser, sFunc)
+	cmd := jsonCmd.getCommand()
+	cmd.Flags().String("port", testPort, "")
 
 	t.Run("successful command", func(t *testing.T) {
 		args := []string{testFile}
@@ -91,7 +91,8 @@ func TestExecuteJSONCommand(t *testing.T) {
 		mockServer.On("ListenAndServe").Return(nil)
 		mockServer.On("Watch", schemaChan)
 
-		err := testJSONCmd.execute(testCobraCmd, args)
+		cmd.SetArgs(args)
+		err := cmd.Execute()
 
 		assert.NoError(t, err)
 		assert.Equal(t, testPort, serverPort)
@@ -104,16 +105,17 @@ func TestExecuteJSONCommand(t *testing.T) {
 	})
 
 	t.Run("failed to open file", func(t *testing.T) {
-		fileName := "missingfile"
+		fileName := "missingfile.json"
 		args := []string{fileName}
 		errorMsg := "failed to open file"
 
 		mockFileHandler.On("Open", fileName).Return(errors.New(errorMsg))
 
-		err := testJSONCmd.execute(testCobraCmd, args)
+		cmd.SetArgs(args)
+		err := cmd.Execute()
 
 		assert.Error(t, err)
-		assert.Equal(t, errorMsg, err.Error())
+		assert.Contains(t, errorMsg, err.Error())
 
 		mockFileHandler.AssertExpectations(t)
 		mockParser.AssertExpectations(t)
@@ -129,10 +131,11 @@ func TestExecuteJSONCommand(t *testing.T) {
 		mockFileHandler.On("Open", testFile).Return(nil)
 		mockFileHandler.On("Watch").Return(errors.New(errorMsg))
 
-		err := testJSONCmd.execute(testCobraCmd, args)
+		cmd.SetArgs(args)
+		err := cmd.Execute()
 
 		assert.Error(t, err)
-		assert.Equal(t, errorMsg, err.Error())
+		assert.Contains(t, errorMsg, err.Error())
 
 		mockFileHandler.AssertExpectations(t)
 		mockParser.AssertExpectations(t)

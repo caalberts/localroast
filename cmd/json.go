@@ -1,16 +1,10 @@
 package cmd
 
 import (
-	"github.com/caalberts/localroast/filesystem"
-	"github.com/caalberts/localroast/http"
-	"github.com/caalberts/localroast/json"
-	"github.com/caalberts/localroast/types"
-	"github.com/spf13/cobra"
-	"io"
-
 	"errors"
+	"github.com/caalberts/localroast/http"
 	log "github.com/sirupsen/logrus"
-	"os"
+	"github.com/spf13/cobra"
 	"strings"
 )
 
@@ -26,17 +20,11 @@ func (c *jsonCommand) getCommand() *cobra.Command {
 	return c.Command
 }
 
-func newJSONCmd() commander {
-	fileHandler, err := filesystem.NewFileHandler()
-	if err != nil {
-		log.Error(err)
-		os.Exit(1)
-	}
-
+func newJSONCmd(fileHandler fileHandler, parser parser, serverFunc http.ServerFunc) commander {
 	jsonCmd := &jsonCommand{
 		fileHandler: fileHandler,
-		parser:      json.NewParser(),
-		serverFunc:  http.NewServer,
+		parser:      parser,
+		serverFunc:  serverFunc,
 	}
 
 	command := &cobra.Command{
@@ -53,17 +41,6 @@ func newJSONCmd() commander {
 	jsonCmd.Command = command
 
 	return jsonCmd
-}
-
-type fileHandler interface {
-	Output() chan io.Reader
-	Open(fileName string) error
-	Watch() error
-}
-
-type parser interface {
-	Output() chan []types.Schema
-	Watch(chan io.Reader)
 }
 
 func (c *jsonCommand) execute(cmd *cobra.Command, args []string) error {
