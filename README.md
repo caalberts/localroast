@@ -8,7 +8,7 @@
 
 ## Overview
 
-Localroast quickly stubs a HTTP server. The stubbed endpoints and responses are defined in a JSON file.
+Localroast quickly stubs a HTTP server. It takes a JSON file with a list of paths and stub responses. Changes are autoloaded.
 
 ## Installation
 
