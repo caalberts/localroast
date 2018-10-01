@@ -29,6 +29,7 @@ func Execute(v string) {
 type commandBuilder struct {
 	fileHandler fileHandler
 	jsonParser  parser
+	serverFunc  http.ServerFunc
 }
 
 type fileHandler interface {
@@ -52,11 +53,12 @@ func newCommandBuilder() (*commandBuilder, error) {
 	return &commandBuilder{
 		fileHandler: fileHandler,
 		jsonParser:  jsonParser,
+		serverFunc:  http.NewServer,
 	}, nil
 }
 
 func (b *commandBuilder) build() *cobra.Command {
-	jsonCmd := newJSONCmd(b.fileHandler, b.jsonParser, http.NewServer)
+	jsonCmd := newJSONCmd(b.fileHandler, b.jsonParser, b.serverFunc)
 	versionCmd := newVersionCmd()
 	root := newRootCmd(jsonCmd)
 	rootCmd := root.getCommand()

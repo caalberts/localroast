@@ -37,4 +37,4 @@ test: build-deps
 	ENVIRONMENT=test go test $(ALL_PACKAGES) -race
 
 test-cover: build-deps
-	ENVIRONMENT=test go test $(ALL_PACKAGES) -race -v -cover -coverprofile=coverage.txt
+	ENVIRONMENT=test go test $(ALL_PACKAGES) -race -v -cover -coverprofile=coverage.out
