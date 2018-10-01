@@ -29,14 +29,20 @@ func TestFileHandler_Open(t *testing.T) {
 	fileHandler, err := NewFileHandler()
 	assert.NoError(t, err)
 
-	err = fileHandler.Open(watchedFile)
-	assert.NoError(t, err)
+	t.Run("with valid file", func(t *testing.T) {
+		err = fileHandler.Open(watchedFile)
+		assert.NoError(t, err)
 
-	assert.Equal(t, watchedFile, fileHandler.file)
+		assert.Equal(t, watchedFile, fileHandler.file)
 
-	result, err := ioutil.ReadAll(<-fileHandler.Output())
-	assert.NoError(t, err)
-	assert.Equal(t, []byte(fileContent), result)
+		result, err := ioutil.ReadAll(<-fileHandler.Output())
+		assert.NoError(t, err)
+		assert.Equal(t, []byte(fileContent), result)
+	})
+
+	t.Run("with non-existent file", func(t *testing.T) {
+		assert.Error(t, fileHandler.Open("missing_file"))
+	})
 }
 
 func TestFileHandler_Watch(t *testing.T) {

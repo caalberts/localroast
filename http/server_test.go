@@ -2,13 +2,14 @@ package http
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/caalberts/localroast/types"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"time"
 )
 
 func TestNewServer(t *testing.T) {
@@ -17,72 +18,77 @@ func TestNewServer(t *testing.T) {
 	assert.Equal(t, ":8888", server.Server.Addr)
 }
 
-func TestNewRouterHasNoImplementation(t *testing.T) {
-	router := newRouter()
-	req := httptest.NewRequest("GET", "/", nil)
-	resp := httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
-	assert.Equal(t, http.StatusNotImplemented, resp.Code)
-}
+func TestServer_Watch(t *testing.T) {
+	server := &server{router: newRouter()}
+	schemaChannel := make(chan []types.Schema)
+	server.Watch(schemaChannel)
 
-func TestRouterWithUpdatedSchema(t *testing.T) {
-	router := newRouter()
-	schemas := []types.Schema{
-		{
-			Method:   "GET",
-			Path:     "/",
-			Status:   200,
-			Response: []byte(`{"success": true}`),
-		},
-		{
-			Method:   "GET",
-			Path:     "/users",
-			Status:   200,
-			Response: []byte(`{"success": true, "ids": [1, 2]}`),
-		},
-		{
-			Method:   "POST",
-			Path:     "/users",
-			Status:   201,
-			Response: []byte(`{"success": true, "id": 3}`),
-		},
-	}
+	t.Run("new server has empty router", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/", nil)
+		resp := httptest.NewRecorder()
+		server.router.ServeHTTP(resp, req)
+		assert.Equal(t, http.StatusNotImplemented, resp.Code)
+	})
 
-	type testData struct {
-		Success bool   `json:"success"`
-		ID      int    `json:"id"`
-		IDs     []int  `json:"ids"`
-		Message string `json:"message"`
-	}
-	router.updateSchema(schemas)
+	t.Run("with updated schema", func(t *testing.T) {
+		schemas := []types.Schema{
+			{
+				Method:   "GET",
+				Path:     "/",
+				Status:   200,
+				Response: []byte(`{"success": true}`),
+			},
+			{
+				Method:   "GET",
+				Path:     "/users",
+				Status:   200,
+				Response: []byte(`{"success": true, "ids": [1, 2]}`),
+			},
+			{
+				Method:   "POST",
+				Path:     "/users",
+				Status:   201,
+				Response: []byte(`{"success": true, "id": 3}`),
+			},
+		}
+		schemaChannel <- schemas
+		time.Sleep(1 * time.Millisecond)
 
-	var expected, actual testData
-	for _, schema := range schemas {
-		t.Run(schema.Method+schema.Path, func(t *testing.T) {
-			req := httptest.NewRequest(schema.Method, schema.Path, nil)
-			resp := httptest.NewRecorder()
-			router.ServeHTTP(resp, req)
+		type testData struct {
+			Success bool   `json:"success"`
+			ID      int    `json:"id"`
+			IDs     []int  `json:"ids"`
+			Message string `json:"message"`
+		}
 
-			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
-			assert.Equal(t, schema.Status, resp.Code)
+		var expected, actual testData
+		for _, schema := range schemas {
+			t.Run(schema.Method+schema.Path, func(t *testing.T) {
+				req := httptest.NewRequest(schema.Method, schema.Path, nil)
+				resp := httptest.NewRecorder()
+				server.router.ServeHTTP(resp, req)
 
-			body := resp.Result().Body
-			defer body.Close()
-			json.NewDecoder(body).Decode(&actual)
-			json.Unmarshal(schema.Response, &expected)
-			assert.Equal(t, expected, actual)
-		})
-	}
+				assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+				assert.Equal(t, schema.Status, resp.Code)
 
-	req := httptest.NewRequest(http.MethodGet, "/unknown", nil)
-	resp := httptest.NewRecorder()
-	router.ServeHTTP(resp, req)
+				body := resp.Result().Body
+				defer body.Close()
+				json.NewDecoder(body).Decode(&actual)
+				json.Unmarshal(schema.Response, &expected)
+				assert.Equal(t, expected, actual)
+			})
+		}
 
-	assert.Equal(t, http.StatusNotFound, resp.Code)
-	body := resp.Result().Body
-	defer body.Close()
-	bodyBytes, _ := ioutil.ReadAll(body)
-	assert.Equal(t, "404 page not found\n", string(bodyBytes))
+		req := httptest.NewRequest(http.MethodGet, "/unknown", nil)
+		resp := httptest.NewRecorder()
+		server.router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusNotFound, resp.Code)
+		body := resp.Result().Body
+		defer body.Close()
+		bodyBytes, _ := ioutil.ReadAll(body)
+		assert.Equal(t, "404 page not found\n", string(bodyBytes))
+	})
 }
 
 func TestPathParam(t *testing.T) {
