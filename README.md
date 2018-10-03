@@ -10,6 +10,8 @@
 
 Localroast quickly stubs a HTTP server. It takes a JSON file with a list of paths and stub responses. Changes are autoloaded.
 
+![localroast demo](localroast_demo.gif)
+
 ## Installation
 
 From brew:
