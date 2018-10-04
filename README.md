@@ -8,7 +8,7 @@
 
 ## Overview
 
-Localroast quickly stubs a HTTP server. It takes a JSON file with a list of paths and stub responses. Changes are autoloaded.
+Localroast quickly stubs a HTTP server. It takes a JSON file with a list of paths and stub responses. Changes are autoloaded. Use it to develop and test an API client.
 
 ![localroast demo](localroast_demo.gif)
 
