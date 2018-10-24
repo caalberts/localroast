@@ -10,7 +10,7 @@ jobs:
       - run: make build
       - run: go get github.com/mattn/goveralls
       - run: make test-cover
-      - run: /go/bin/goveralls -coverprofile=coverage.out -service=circle-ci -repotoken=$COVERALLS_TOKEN
+      - run: /go/bin/goveralls -coverprofile=coverage.out -service=circle-ci -repotoken $COVERALLS_TOKEN
   release:
     docker:
       - image: circleci/golang:1.10
