@@ -37,7 +37,4 @@ test: build-deps
 	go test $(ALL_PACKAGES) -race
 
 test-cover: build-deps
-	go test $(ALL_PACKAGES) -race -v -cover -coverprofile=coverage.out
-
-test-codecov: build-deps
 	go test -race -coverprofile=coverage.txt -covermode=atomic $(ALL_PACKAGES)

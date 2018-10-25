@@ -8,9 +8,7 @@ jobs:
     steps:
       - checkout
       - run: make build
-      - run: go get github.com/mattn/goveralls
-      - run: make test-codecov
-      - run: /go/bin/goveralls -coverprofile=coverage.txt -service=circle-ci -repotoken $COVERALLS_TOKEN
+      - run: make test-cover
       - run: bash <(curl -s https://codecov.io/bash)
   release:
     docker:
