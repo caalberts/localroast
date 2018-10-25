@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.10
+      - image: circleci/golang:1.11.1
     working_directory: /go/src/github.com/caalberts/localroast
     steps:
       - checkout
@@ -12,7 +12,7 @@ jobs:
       - run: bash <(curl -s https://codecov.io/bash)
   release:
     docker:
-      - image: circleci/golang:1.10
+      - image: circleci/golang:1.11.1
     working_directory: /go/src/github.com/caalberts/localroast
     steps:
       - checkout
