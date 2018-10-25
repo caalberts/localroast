@@ -34,7 +34,10 @@ lint:
 	done
 
 test: build-deps
-	ENVIRONMENT=test go test $(ALL_PACKAGES) -race
+	go test $(ALL_PACKAGES) -race
 
 test-cover: build-deps
-	ENVIRONMENT=test go test $(ALL_PACKAGES) -race -v -cover -coverprofile=coverage.out
+	go test $(ALL_PACKAGES) -race -v -cover -coverprofile=coverage.out
+
+test-codecov: build-deps
+	go test -race -coverprofile=coverage.txt -covermode=atomic $(ALL_PACKAGES)
