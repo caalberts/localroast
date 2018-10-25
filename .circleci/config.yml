@@ -5,7 +5,7 @@ jobs:
     docker:
       - image: circleci/golang:1.11.1
         environment:
-          GO111MODULE: "ON"
+          GO111MODULE: "on"
     working_directory: /go/src/github.com/caalberts/localroast
     steps:
       - checkout
@@ -16,7 +16,7 @@ jobs:
     docker:
       - image: circleci/golang:1.11.1
         environment:
-          GO111MODULE: "ON"
+          GO111MODULE: "on"
     working_directory: /go/src/github.com/caalberts/localroast
     steps:
       - checkout
