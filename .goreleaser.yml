@@ -1,4 +1,7 @@
 project_name: localroast
+before:
+  hooks:
+    - go mod download
 builds:
   - main: ./main.go
     env:
