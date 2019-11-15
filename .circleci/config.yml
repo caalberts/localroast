@@ -3,9 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.11.1
-        environment:
-          GO111MODULE: "on"
+      - image: circleci/golang:1.13
     working_directory: /go/src/github.com/caalberts/localroast
     steps:
       - checkout
@@ -14,9 +12,7 @@ jobs:
       - run: bash <(curl -s https://codecov.io/bash)
   release:
     docker:
-      - image: circleci/golang:1.11.1
-        environment:
-          GO111MODULE: "on"
+      - image: circleci/golang:1.13
     working_directory: /go/src/github.com/caalberts/localroast
     steps:
       - checkout
