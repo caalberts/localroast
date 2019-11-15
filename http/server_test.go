@@ -69,6 +69,7 @@ func TestServer_Watch(t *testing.T) {
 				resp := httptest.NewRecorder()
 				server.router.ServeHTTP(resp, req)
 
+				assert.Equal(t, "*", resp.Header().Get("Access-Control-Allow-Origin"))
 				assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
 				assert.Equal(t, schema.Status, resp.Code)
 

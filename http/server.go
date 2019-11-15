@@ -85,6 +85,7 @@ func handlerFunc(schema types.Schema) httprouter.Handle {
 
 		log.Infof("request: %s %s", r.Method, r.URL)
 		log.Infof("response status: %d, body: %s", schema.Status, schema.Response)
+		w.Header().Add("Access-Control-Allow-Origin", "*")
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(schema.Status)
 		_, ok := r.URL.Query()["pretty"]
